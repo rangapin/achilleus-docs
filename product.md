@@ -82,31 +82,16 @@ Achilleus is a security monitoring SaaS that provides comprehensive website secu
 - One-click report generation
 - Score trend analysis
 
-#### 6. Email Communication System
-- Welcome email sequence for trial activation
-- Automated trial reminders (days 7, 10, 12, 14)
-- Scan completion notifications with results summary
-- Billing and payment confirmation emails
-- Preference management and unsubscribe options
+#### 6. Support System (Simplified MVP)
+- Support email displayed in footer and profile
+- Basic FAQ on landing page
+- Contact email: security@achilleus.so
 
-#### 7. Support Infrastructure
-- Multi-channel contact form with intelligent routing
-- Comprehensive FAQ system with search functionality
-- In-app feedback widget for user insights
-- Knowledge base integration for self-service
-
-#### 8. Guided Onboarding Flow
-- Interactive welcome sequence with personalization
-- Real-time first scan progress with educational content
-- Achievement system with milestone celebrations
-- Progressive feature discovery to reduce overwhelm
-- Onboarding analytics for conversion optimization
-
-#### 9. Legal & Compliance
-- GDPR-compliant Terms of Service and Privacy Policy
-- Cookie consent management with user preferences
-- Data export and account deletion functionality
-- Legal document versioning and acceptance tracking
+#### 7. Legal & Compliance (MVP Requirements)
+- Terms of Service acceptance on signup (required)
+- Cookie consent banner (simple implementation)
+- Privacy Policy link (static page)
+- GDPR data export/deletion (manual process on request)
 
 ### User Experience
 
@@ -122,6 +107,16 @@ Profile Menu:
 ├── Subscription (billing management)
 └── Sign Out
 ```
+
+## Technology Stack & Resources
+
+### Core Technologies
+- **Laravel 12**: https://laravel.com/docs/12.x
+- **React 19**: https://react.dev/
+- **Shadcn/ui**: https://ui.shadcn.com/
+- **Laravel Cloud**: https://cloud.laravel.com/
+- **Laravel Reverb**: https://reverb.laravel.com/
+- **Stripe API**: Direct integration (no Cashier)
 
 ## Design System & UI Specifications
 
@@ -540,6 +535,10 @@ This design system ensures consistency across all pages while maintaining the pr
 - Sweet spot for freelancers
 - Sustainable unit economics
 
+**Technical Foundation:**
+- Built with Laravel 12 starter kit (React + TypeScript): https://laravel.com/docs/12.x/starter-kits
+- Landing page uses Salient template: https://tailwindcss.com/plus/templates/salient
+
 ### Trial Strategy
 - **14 days**: Optimal for technical evaluation
 - **No restrictions**: Full features during trial
@@ -593,6 +592,129 @@ This design system ensures consistency across all pages while maintaining the pr
 - **Simplicity**: One scan type, clear scoring
 - **Speed**: 15-second scans vs 2-5 minutes
 - **Focus**: Security only, no feature bloat
+
+## User Journey Documentation
+
+### New User Journey (Trial to Paid)
+
+#### 1. Discovery & Signup (0-5 minutes)
+**Entry Points:**
+- Landing page via search/referral
+- Product Hunt or community recommendation
+- Comparison article
+
+**User Actions:**
+1. Lands on homepage, sees "$27 for 10 domains" value prop
+2. Clicks "Start Free Trial" (no credit card required)
+3. Fills signup form (name, email, password)
+4. Accepts Terms of Service (checkbox required)
+5. Receives welcome email with trial details
+
+**System Response:**
+- Creates user account with 14-day trial
+- Sets trial_ends_at timestamp
+- Sends welcome email
+- Redirects to empty dashboard
+
+#### 2. First Domain Addition (5-10 minutes)
+**User Actions:**
+1. Sees empty dashboard with "Add Your First Domain" CTA
+2. Clicks "Add Domain" button
+3. Enters HTTPS URL (e.g., https://mysite.com)
+4. Selects email configuration (expected/none)
+5. Clicks "Add & Scan"
+
+**System Response:**
+- Validates URL (HTTPS-only, public IP)
+- Creates domain record
+- Triggers automatic first scan
+- Shows scan progress in real-time
+
+#### 3. First Scan Results (10-15 minutes)
+**User Actions:**
+1. Watches scan progress (15-30 seconds)
+2. Views security score and grade (A-F)
+3. Explores module breakdowns (SSL, Headers, DNS)
+4. Reviews recommendations list
+
+**System Response:**
+- Displays overall score with color coding
+- Shows detailed module results
+- Provides actionable recommendations
+- Updates dashboard metrics
+
+#### 4. Exploration Phase (Days 1-7)
+**User Actions:**
+- Adds more domains (up to 10)
+- Runs additional scans
+- Generates first PDF report
+- Explores scan history
+
+**Key Moments:**
+- Day 3: In-app trial progress indicator
+- Day 5: Dashboard shows feature exploration
+- Day 7: Trial halfway banner emphasis
+
+#### 5. Conversion Decision (Days 8-14)
+**User Actions:**
+- Evaluates value from scan results
+- Compares with alternatives ($27 vs $250+)
+- Decides to upgrade or abandon
+
+**Conversion Triggers:**
+- Day 10: Prominent upgrade prompt in dashboard
+- Day 12: Trial banner shows urgency
+- Day 14: Trial expiration with clear upgrade path
+
+#### 6. Paid Subscription (Post-Trial)
+**User Actions:**
+1. Clicks "Upgrade Now"
+2. Enters payment information (Stripe)
+3. Confirms $27/month subscription
+4. Continues using full features
+
+**System Response:**
+- Processes payment via Stripe
+- Updates subscription_status to 'active'
+- Removes trial banner
+- Sends payment confirmation
+
+### Returning User Journey (Daily/Weekly Use)
+
+#### Quick Scan Workflow (2-3 minutes)
+1. **Login** → Dashboard
+2. **Select Domain** → Click scan icon
+3. **View Results** → Check score changes
+4. **Generate Report** → Download PDF
+
+#### Bulk Operations (5-10 minutes)
+1. **Login** → Dashboard
+2. **Click "Scan All"** → Queue all domains
+3. **Monitor Progress** → Watch scan queue
+4. **Review Results** → Check for issues
+5. **Export Data** → Generate reports
+
+### Edge Case User Journeys
+
+#### Failed Payment Recovery
+1. Payment fails → Dashboard notification
+2. Grace period (3 days) → Limited access
+3. Update payment method → Full access restored
+4. Continued failure → Account suspended
+
+#### Domain Limit Reached
+1. Attempts to add 11th domain
+2. Sees "Domain limit reached" message
+3. Options presented:
+   - Remove existing domain
+   - Upgrade plan (future feature)
+   - Contact support
+
+#### Scanner Failure Handling
+1. Scan fails (timeout/error)
+2. User sees error message with reason
+3. Retry option provided
+4. Support contact if persistent
 
 ## Product Roadmap
 
@@ -724,6 +846,9 @@ const SCAN_LIMIT = 'unlimited';
 ❌ **API Access** - Web interface only in MVP
 ❌ **Laravel Cashier** - Direct Stripe API integration
 ❌ **Horizon** - Laravel Cloud handles queues
+❌ **Complex Support System** - Simple email only for MVP
+❌ **Comprehensive Legal System** - Basic terms acceptance only
+❌ **Email System** - Contact support via security@achilleus.so only
 
 ## Conclusion
 
@@ -737,3 +862,7 @@ The product is designed to be:
 - **Professional**: PDF reports for documentation
 
 This combination creates a compelling value proposition that competitors cannot match without destroying their revenue models.
+
+## Deployment Strategy
+
+**Laravel Cloud Only**: This project is designed specifically for Laravel Cloud deployment (https://cloud.laravel.com/). No self-hosting, Docker, or VPS deployment options are provided in the MVP. Laravel Cloud provides automatic scaling, SSL certificates, database management, and global CDN out of the box.

@@ -3,15 +3,16 @@
 ## System Architecture
 
 ### Technology Stack
-- **Backend**: Laravel 12 with PHP 8.3+
-- **Frontend**: React 19 with TypeScript and Inertia.js
-- **UI Components**: Shadcn/ui with dark theme support
+- **Backend**: Laravel 12 with PHP 8.3+ (https://laravel.com/docs/12.x)
+- **Frontend**: React 19 with TypeScript and Inertia.js (https://react.dev/)
+- **UI Components**: Shadcn/ui with dark theme support (https://ui.shadcn.com/)
 - **Database**: Serverless PostgreSQL 15 (Laravel Cloud managed)
 - **Cache**: Redis-compatible key-value store (auto-scaling)
-- **Queue**: Laravel Cloud Queue Workers (auto-scaling)
+- **Queue**: Laravel Cloud Queue Workers (auto-scaling, no manual configuration)
 - **Storage**: S3-compatible object storage for PDF reports
 - **CDN**: Laravel Cloud Edge Network with global CDN
-- **Hosting**: Laravel Cloud (serverless with hibernation)
+- **Hosting**: Laravel Cloud only (https://cloud.laravel.com/)
+- **Real-time**: Laravel Reverb for WebSocket connections (https://reverb.laravel.com/)
 
 ### Application Architecture
 ```
@@ -24,9 +25,9 @@
                         ┌────────────────────────────┴────────────────┐
                         ▼                                             ▼
                 ┌──────────────┐                              ┌──────────────┐
-                │   Services   │                              │    Queue     │
-                │  (Business   │                              │  Workers     │
-                │   Logic)     │                              │ (Auto-scale) │
+                │   Services   │                              │ Laravel Cloud│
+                │  (Business   │                              │ Queue Workers│
+                │   Logic)     │                              │ (Managed)    │
                 └──────────────┘                              └──────────────┘
                         │                                             │
                         ▼                                             ▼
@@ -102,7 +103,7 @@ CREATE TABLE scan_modules (
     module VARCHAR(20) NOT NULL CHECK (module IN ('security_headers', 'ssl_tls', 'dns_email')),
     score INTEGER CHECK (score >= 0 AND score <= 100),
     status VARCHAR(10) NOT NULL CHECK (status IN ('ok', 'warn', 'fail', 'error')),
-    raw JSONB,
+    raw JSONB NOT NULL DEFAULT '{}',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(scan_id, module)
@@ -128,44 +129,17 @@ CREATE INDEX idx_scans_domain ON scans(domain_id, created_at DESC);
 CREATE INDEX idx_scans_user ON scans(user_id, created_at DESC);
 CREATE INDEX idx_scans_status ON scans(status) WHERE status IN ('pending', 'running');
 
--- Support system tables
-CREATE TABLE support_tickets (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL,
-    category VARCHAR(20) NOT NULL CHECK (category IN ('billing', 'technical', 'feature', 'other')),
-    priority VARCHAR(10) NOT NULL CHECK (priority IN ('low', 'medium', 'high', 'urgent')),
-    subject VARCHAR(255) NOT NULL,
-    message TEXT NOT NULL,
-    status VARCHAR(20) DEFAULT 'open' CHECK (status IN ('open', 'pending', 'resolved', 'closed')),
-    assigned_to UUID REFERENCES users(id) ON DELETE SET NULL,
-    resolved_at TIMESTAMP,
-    metadata JSONB DEFAULT '{}',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- Support is handled via contact email (security@achilleus.so)
+-- No support tables needed for MVP
 
--- Legal compliance tables
-CREATE TABLE legal_documents (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    type VARCHAR(50) NOT NULL CHECK (type IN ('terms_of_service', 'privacy_policy')),
-    version VARCHAR(20) NOT NULL,
-    content TEXT NOT NULL,
-    effective_date DATE NOT NULL,
-    is_active BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
+-- Simplified legal (MVP: Terms acceptance on signup only)
 CREATE TABLE user_legal_acceptances (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    document_type VARCHAR(50) NOT NULL,
-    document_version VARCHAR(20) NOT NULL,
-    accepted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    terms_accepted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     ip_address INET,
     user_agent TEXT,
-    UNIQUE(user_id, document_type, document_version)
+    UNIQUE(user_id)
 );
 
 -- User achievements for onboarding
@@ -373,6 +347,7 @@ abstract class AbstractScanner implements Scanner {
         $host = parse_url($url, PHP_URL_HOST);
         $key = "scanner_rate_limit:{$this->name()}:{$host}";
         
+        // Laravel Cloud Redis handles this automatically
         $requests = Cache::get($key, 0);
         return $requests < $this->getRateLimitPerMinute();
     }
@@ -381,8 +356,9 @@ abstract class AbstractScanner implements Scanner {
         $host = parse_url($url, PHP_URL_HOST);
         $key = "scanner_rate_limit:{$this->name()}:{$host}";
         
+        // Laravel Cloud Redis handles expiration
         Cache::increment($key, 1);
-        Cache::expire($key, 60); // 1 minute window
+        Cache::expire($key, 60);
     }
     
     protected function getRateLimitPerMinute(): int {
@@ -1482,6 +1458,7 @@ class DnsEmailScanner extends AbstractScanner {
 
 ### SSRF Protection (NetworkGuard)
 ```php
+<?php
 namespace App\Support;
 
 final class NetworkGuard {
@@ -1547,10 +1524,23 @@ final class NetworkGuard {
         
         return false;
     }
+    
+    private static function ipInCidr(string $ip, string $cidr): bool {
+        list($subnet, $bits) = explode('/', $cidr);
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            $ip = ip2long($ip);
+            $subnet = ip2long($subnet);
+            $mask = -1 << (32 - $bits);
+            $subnet &= $mask;
+            return ($ip & $mask) == $subnet;
+        }
+        // IPv6 handling would go here if needed
+        return false;
+    }
 }
 ```
 
-## Queue Processing
+## Job Processing (Laravel Cloud Managed)
 
 ### Scan Job Implementation
 ```php
@@ -1672,7 +1662,7 @@ class SecurityScorer {
         // Get only the modules we have scores for
         $availableModules = array_intersect_key($weights, $subscores);
         
-        // Normalize weights for available modules
+        // When scanner fails: Redistribute weights proportionally
         $totalWeight = array_sum($availableModules);
         $normalizedWeights = [];
         
@@ -1759,26 +1749,29 @@ class StripeService {
 
 ## Laravel Cloud Configuration
 
-### Modern Laravel Cloud Setup
-**Key Changes Based on Latest Laravel Cloud:**
+### Laravel Cloud Deployment (Cloud Only - No Self-Hosting)
+**Laravel Cloud Platform**: https://cloud.laravel.com/
 - No configuration files needed - managed through UI
 - Automatic SSL/TLS certificate provisioning
 - Push-to-deploy with GitHub integration
 - Auto-hibernation for cost optimization
 - Global edge network included
+- Laravel Reverb for WebSocket connections
 
 ### Deployment Process
 ```bash
-# 1. Connect GitHub repository to Laravel Cloud
+# 1. Connect GitHub repository to Laravel Cloud (https://cloud.laravel.com/)
 # 2. Laravel Cloud auto-detects Laravel 12 project
 # 3. Configure environment variables via UI:
 #    - STRIPE_KEY, STRIPE_SECRET, STRIPE_WEBHOOK_SECRET
 #    - APP_ENV=production, APP_DEBUG=false
+#    - REVERB_APP_ID, REVERB_APP_KEY, REVERB_APP_SECRET (for real-time)
 # 4. Laravel Cloud automatically provisions:
 #    - Serverless PostgreSQL database
 #    - Redis-compatible cache
 #    - S3-compatible storage
-#    - Queue workers with auto-scaling
+#    - Queue workers with auto-scaling (Laravel Cloud managed)
+#    - Laravel Reverb WebSocket server
 # 5. Deploy with one click
 ```
 
@@ -1798,7 +1791,7 @@ storage:
   type: s3-compatible
   automatic_backups: true
   
-queue:
+# Laravel Cloud handles queue configuration automatically
   type: managed_workers
   auto_scaling: 0-10_workers
   cost_optimization: enabled
@@ -1816,36 +1809,292 @@ scaling:
   cost_optimization: automatic
 ```
 
-## Performance Optimizations
+## Performance Best Practices
 
-### Database Query Optimization
+### Query Optimization (Application Level)
 ```php
-// Eager loading relationships
+// Eager load relationships to prevent N+1 queries
 $domains = auth()->user()
     ->domains()
     ->with(['lastScan.modules'])
     ->where('is_active', true)
     ->paginate(10);
 
-// Using database indexes effectively
-Scan::where('user_id', $userId)
-    ->where('created_at', '>=', now()->subDays(30))
-    ->orderBy('created_at', 'desc')
-    ->limit(10)
-    ->get();
+// Use database indexes (defined in migrations)
+// Laravel Cloud handles query optimization and connection pooling
 ```
 
-### Caching Strategy
+### Caching (Handled by Laravel Cloud)
+Laravel Cloud provides Redis caching automatically. Simple usage:
 ```php
-// Cache dashboard metrics
-$metrics = Cache::remember("dashboard:{$user->id}", 900, function () use ($user) {
-    return [
-        'total_score' => $user->domains()->avg('last_scan_score'),
-        'active_domains' => $user->domains()->where('is_active', true)->count(),
-        'last_scan' => $user->scans()->latest()->first(),
-        'critical_issues' => $user->domains()->where('last_scan_score', '<', 60)->count()
-    ];
+// Dashboard metrics with 15-minute cache
+Cache::remember("dashboard:{$user->id}", 900, fn() => $dashboardData);
+```
+
+## Error Handling Standards
+
+### Error Handling Architecture
+
+#### Exception Hierarchy
+```php
+namespace App\Exceptions;
+
+// Base exceptions
+class AchilleusException extends \Exception {}
+class ValidationException extends AchilleusException {}
+class SecurityException extends AchilleusException {}
+class ScannerException extends AchilleusException {}
+
+// Specific exceptions
+class SSRFException extends SecurityException {}
+class DomainLimitException extends ValidationException {}
+class ScanTimeoutException extends ScannerException {}
+class PaymentFailedException extends AchilleusException {}
+class SubscriptionExpiredException extends AchilleusException {}
+```
+
+#### Global Error Handler
+```php
+namespace App\Exceptions;
+
+class Handler extends ExceptionHandler {
+    public function render($request, Throwable $e) {
+        // API responses
+        if ($request->expectsJson()) {
+            return $this->handleApiException($e);
+        }
+        
+        // Inertia responses
+        if ($e instanceof ValidationException) {
+            return back()->withErrors($e->errors());
+        }
+        
+        // Security exceptions - log but don't expose details
+        if ($e instanceof SecurityException) {
+            Log::warning('Security exception', [
+                'type' => get_class($e),
+                'message' => $e->getMessage(),
+                'user' => auth()->id(),
+                'ip' => request()->ip()
+            ]);
+            
+            return inertia('Error', [
+                'status' => 403,
+                'message' => 'Security validation failed'
+            ]);
+        }
+        
+        // Scanner exceptions - user-friendly messages
+        if ($e instanceof ScannerException) {
+            return inertia('Error', [
+                'status' => 500,
+                'message' => 'Scan failed. Please try again.',
+                'retry' => true
+            ]);
+        }
+        
+        return parent::render($request, $e);
+    }
+    
+    private function handleApiException(Throwable $e): JsonResponse {
+        $status = 500;
+        $message = 'Server error';
+        
+        if ($e instanceof ValidationException) {
+            $status = 422;
+            $message = $e->getMessage();
+        } elseif ($e instanceof SecurityException) {
+            $status = 403;
+            $message = 'Forbidden';
+        } elseif ($e instanceof ScannerException) {
+            $status = 503;
+            $message = 'Service temporarily unavailable';
+        }
+        
+        return response()->json([
+            'error' => $message,
+            'type' => class_basename($e)
+        ], $status);
+    }
+}
+```
+
+#### Controller Error Handling
+```php
+class DomainController extends Controller {
+    public function store(StoreDomainRequest $request) {
+        try {
+            // Check domain limit
+            if (auth()->user()->domains()->count() >= 10) {
+                throw new DomainLimitException('Domain limit reached');
+            }
+            
+            $domain = auth()->user()->domains()->create($request->validated());
+            
+            // Trigger scan
+            RunDomainScan::dispatch($domain);
+            
+            return redirect()->route('domains.show', $domain)
+                ->with('success', 'Domain added successfully');
+                
+        } catch (DomainLimitException $e) {
+            return back()->with('error', 'You have reached the 10 domain limit');
+        } catch (\Exception $e) {
+            Log::error('Domain creation failed', [
+                'error' => $e->getMessage(),
+                'user' => auth()->id()
+            ]);
+            
+            return back()->with('error', 'Failed to add domain. Please try again.');
+        }
+    }
+}
+```
+
+#### Service Layer Error Handling
+```php
+class ScanOrchestrator {
+    public function executeScan(Domain $domain): Scan {
+        $scan = $domain->scans()->create(['status' => 'running']);
+        
+        try {
+            $results = [];
+            
+            // Run scanners with individual error handling
+            foreach ($this->scanners as $scanner) {
+                try {
+                    $results[$scanner->name()] = $scanner->scan($domain->url);
+                } catch (ScanTimeoutException $e) {
+                    Log::warning("Scanner timeout", [
+                        'scanner' => $scanner->name(),
+                        'domain' => $domain->url
+                    ]);
+                    $results[$scanner->name()] = ModuleResult::timeout($scanner->name());
+                } catch (\Exception $e) {
+                    Log::error("Scanner failed", [
+                        'scanner' => $scanner->name(),
+                        'error' => $e->getMessage()
+                    ]);
+                    $results[$scanner->name()] = ModuleResult::error($scanner->name());
+                }
+            }
+            
+            // Calculate score even with failed modules
+            $scoring = $this->scorer->calculate($results);
+            
+            $scan->update([
+                'status' => 'completed',
+                'total_score' => $scoring['total'],
+                'grade' => $scoring['grade']
+            ]);
+            
+            return $scan;
+            
+        } catch (\Exception $e) {
+            $scan->update([
+                'status' => 'failed',
+                'error_message' => $e->getMessage()
+            ]);
+            
+            throw new ScannerException('Scan orchestration failed', 0, $e);
+        }
+    }
+}
+```
+
+#### Frontend Error Handling (React)
+```typescript
+// Error boundary component
+export function ErrorBoundary({ children }: { children: React.ReactNode }) {
+    return (
+        <ErrorBoundaryComponent
+            fallback={<ErrorFallback />}
+            onError={(error, errorInfo) => {
+                console.error('Error caught by boundary:', error, errorInfo);
+            }}
+        >
+            {children}
+        </ErrorBoundaryComponent>
+    );
+}
+
+// Form error handling
+const form = useForm({
+    onError: (errors) => {
+        if (errors.domain_limit) {
+            toast.error('You have reached the 10 domain limit');
+        } else if (errors.url) {
+            toast.error('Invalid domain URL');
+        } else {
+            toast.error('An error occurred. Please try again.');
+        }
+    }
 });
+
+// API error handling
+const handleScan = async (domainId: string) => {
+    try {
+        await axios.post(`/domains/${domainId}/scan`);
+        toast.success('Scan started');
+    } catch (error) {
+        if (error.response?.status === 429) {
+            toast.error('Rate limit exceeded. Please wait.');
+        } else if (error.response?.status === 403) {
+            toast.error('Access denied');
+        } else {
+            toast.error('Scan failed. Please try again.');
+        }
+    }
+};
+```
+
+#### User-Friendly Error Messages
+```php
+// Error message mapping
+class ErrorMessages {
+    private static $messages = [
+        SSRFException::class => 'The provided URL is not accessible for security reasons.',
+        DomainLimitException::class => 'You have reached your 10 domain limit. Please remove a domain to add a new one.',
+        ScanTimeoutException::class => 'The scan took too long to complete. Please try again.',
+        PaymentFailedException::class => 'Payment processing failed. Please check your payment method.',
+        SubscriptionExpiredException::class => 'Your subscription has expired. Please renew to continue.'
+    ];
+    
+    public static function get(Throwable $e): string {
+        $class = get_class($e);
+        return self::$messages[$class] ?? 'An unexpected error occurred. Please try again.';
+    }
+}
+```
+
+#### Logging Standards
+```php
+// Structured logging for errors
+Log::channel('errors')->error('Critical error', [
+    'exception' => get_class($e),
+    'message' => $e->getMessage(),
+    'trace' => $e->getTraceAsString(),
+    'user_id' => auth()->id(),
+    'url' => request()->fullUrl(),
+    'ip' => request()->ip(),
+    'user_agent' => request()->userAgent()
+]);
+
+// Security event logging
+Log::channel('security')->warning('Security violation', [
+    'type' => 'ssrf_attempt',
+    'url' => $url,
+    'user_id' => auth()->id(),
+    'timestamp' => now()
+]);
+
+// Performance issue logging
+Log::channel('performance')->warning('Slow operation', [
+    'operation' => 'scan',
+    'duration' => $duration,
+    'threshold' => 30,
+    'domain' => $domain->url
+]);
 ```
 
 ## Security Measures
@@ -1871,17 +2120,34 @@ class StoreDomainRequest extends FormRequest {
 }
 ```
 
-### Rate Limiting
+### Rate Limiting (Two-Tier System)
 ```php
-// In RouteServiceProvider
+// User-level rate limiting in RouteServiceProvider
 RateLimiter::for('scans', function (Request $request) {
     return Limit::perMinute(10)->by($request->user()->id);
+});
+
+RateLimiter::for('api', function (Request $request) {
+    return Limit::perMinute(60)->by($request->user()->id);
+});
+
+RateLimiter::for('reports', function (Request $request) {
+    return Limit::perDay(10)->by($request->user()->id);
 });
 
 // Applied to routes
 Route::post('/domains/{domain}/scan', [DomainScanController::class, 'store'])
     ->middleware('throttle:scans');
+
+Route::post('/reports', [ReportController::class, 'store'])
+    ->middleware('throttle:reports');
 ```
+
+**Scanner-level rate limiting (per host):**
+- SSL/TLS Scanner: 5 requests/minute per host
+- Security Headers Scanner: 8 requests/minute per host  
+- DNS/Email Scanner: 15 requests/minute per host
+- Default (AbstractScanner): 10 requests/minute per host
 
 ## Performance Targets
 
@@ -1989,1079 +2255,34 @@ npm install --save-dev @playwright/test playwright
 
 ## UX Enhancement Components
 
-### Context-Aware Trial Conversion System
-```typescript
-// TrialBanner.tsx - Smart trial conversion based on user progress
-interface TrialBannerProps {
-  user: User
-  trialProgress: TrialProgress
-}
+### Trial Conversion System
+Context-aware trial banner that adapts messaging based on user progress:
+- High urgency: Trial expires in <3 days with no scans
+- Medium urgency: 80%+ feature exploration
+- Low urgency: Progress-based messaging with available slots
 
-interface TrialProgress {
-  daysRemaining: number
-  domainsAdded: number
-  scansCompleted: number
-  reportsGenerated: number
-  completionPercentage: number
-}
-
-export function TrialBanner({ user, trialProgress }: TrialBannerProps) {
-  const getMessage = () => {
-    if (trialProgress.daysRemaining <= 3 && trialProgress.scansCompleted === 0) {
-      return {
-        urgency: 'high',
-        message: `Trial expires in ${trialProgress.daysRemaining} days - Run your first scan now!`,
-        cta: 'Start Free Scan',
-        action: 'scan'
-      }
-    }
-    
-    if (trialProgress.completionPercentage >= 80) {
-      return {
-        urgency: 'medium',
-        message: `You've explored ${trialProgress.completionPercentage}% of Achilleus. Ready to upgrade?`,
-        cta: 'Upgrade Now',
-        action: 'upgrade'
-      }
-    }
-    
-    if (trialProgress.scansCompleted >= 3 && trialProgress.reportsGenerated === 0) {
-      return {
-        urgency: 'low',
-        message: `Great scanning! Generate your first professional PDF report.`,
-        cta: 'Generate Report',
-        action: 'report'
-      }
-    }
-    
-    return {
-      urgency: 'low',
-      message: `${trialProgress.daysRemaining} days left in trial - ${10 - trialProgress.domainsAdded} domain slots available`,
-      cta: 'Add Domain',
-      action: 'add_domain'
-    }
-  }
-
-  const { urgency, message, cta, action } = getMessage()
-  
-  return (
-    <Alert variant={urgency === 'high' ? 'destructive' : 'default'} className="mb-6">
-      <Clock className="h-4 w-4" />
-      <AlertTitle>Solo Plan Trial</AlertTitle>
-      <AlertDescription className="flex items-center justify-between">
-        <span>{message}</span>
-        <Button 
-          variant={urgency === 'high' ? 'default' : 'outline'}
-          onClick={() => handleTrialAction(action)}
-        >
-          {cta}
-        </Button>
-      </AlertDescription>
-    </Alert>
-  )
-}
-```
+**Implementation**: TrialBanner component with dynamic messaging based on TrialProgress interface
 
 ### Real-Time Scan Progress System
-```typescript
-// ScanProgress.tsx - Live scan progress with WebSocket updates
-interface ScanProgressProps {
-  scanId: string
-  onComplete?: (results: ScanResult) => void
-}
+WebSocket-based live progress tracking for scan operations:
+- 4 scan steps: SSL/TLS, Security Headers, DNS/Email, Score Calculation
+- Progress events: ScanStepStarted, ScanStepProgress, ScanStepCompleted, ScanCompleted, ScanFailed
+- Visual progress bars with status indicators
 
-interface ScanStep {
-  name: string
-  status: 'pending' | 'running' | 'completed' | 'error'
-  progress: number
-  message?: string
-}
-
-export function ScanProgress({ scanId, onComplete }: ScanProgressProps) {
-  const [steps, setSteps] = useState<ScanStep[]>([
-    { name: 'SSL/TLS Analysis', status: 'pending', progress: 0 },
-    { name: 'Security Headers', status: 'pending', progress: 0 },
-    { name: 'DNS/Email Security', status: 'pending', progress: 0 },
-    { name: 'Calculating Score', status: 'pending', progress: 0 }
-  ])
-  
-  const [overallProgress, setOverallProgress] = useState(0)
-  const [currentStep, setCurrentStep] = useState(0)
-  
-  useEffect(() => {
-    const channel = Echo.channel(`scan.${scanId}`)
-      .listen('ScanStepStarted', (e: { step: string, stepIndex: number }) => {
-        setCurrentStep(e.stepIndex)
-        setSteps(prev => prev.map((step, index) => 
-          index === e.stepIndex 
-            ? { ...step, status: 'running', message: 'Analyzing...' }
-            : step
-        ))
-      })
-      .listen('ScanStepProgress', (e: { stepIndex: number, progress: number, message?: string }) => {
-        setSteps(prev => prev.map((step, index) => 
-          index === e.stepIndex 
-            ? { ...step, progress: e.progress, message: e.message }
-            : step
-        ))
-        
-        // Calculate overall progress
-        const totalProgress = steps.reduce((sum, step, index) => 
-          sum + (index <= e.stepIndex ? step.progress : 0), 0
-        ) / steps.length
-        setOverallProgress(totalProgress)
-      })
-      .listen('ScanStepCompleted', (e: { stepIndex: number, result: any }) => {
-        setSteps(prev => prev.map((step, index) => 
-          index === e.stepIndex 
-            ? { ...step, status: 'completed', progress: 100, message: 'Complete' }
-            : step
-        ))
-      })
-      .listen('ScanCompleted', (e: { results: ScanResult }) => {
-        setOverallProgress(100)
-        onComplete?.(e.results)
-      })
-      .listen('ScanFailed', (e: { error: string, stepIndex: number }) => {
-        setSteps(prev => prev.map((step, index) => 
-          index === e.stepIndex 
-            ? { ...step, status: 'error', message: e.error }
-            : step
-        ))
-      })
-      
-    return () => channel.leave()
-  }, [scanId])
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Security Scan in Progress
-        </CardTitle>
-        <CardDescription>
-          Analyzing your website security across multiple vectors
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Overall Progress */}
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>Overall Progress</span>
-            <span>{Math.round(overallProgress)}%</span>
-          </div>
-          <Progress value={overallProgress} className="h-2" />
-        </div>
-        
-        {/* Step-by-step Progress */}
-        <div className="space-y-3">
-          {steps.map((step, index) => (
-            <div key={step.name} className="flex items-center gap-3">
-              <div className={cn(
-                "w-2 h-2 rounded-full",
-                step.status === 'completed' && "bg-green-500",
-                step.status === 'running' && "bg-blue-500 animate-pulse",
-                step.status === 'error' && "bg-red-500",
-                step.status === 'pending' && "bg-gray-300"
-              )} />
-              
-              <div className="flex-1 space-y-1">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">{step.name}</span>
-                  {step.status === 'running' && (
-                    <Badge variant="secondary">{step.progress}%</Badge>
-                  )}
-                  {step.status === 'completed' && (
-                    <Badge variant="default">✓</Badge>
-                  )}
-                  {step.status === 'error' && (
-                    <Badge variant="destructive">✗</Badge>
-                  )}
-                </div>
-                
-                {step.status === 'running' && (
-                  <Progress value={step.progress} className="h-1" />
-                )}
-                
-                {step.message && (
-                  <p className="text-xs text-muted-foreground">{step.message}</p>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-        
-        <div className="flex justify-center pt-4">
-          <Button variant="outline" disabled>
-            <Clock className="h-4 w-4 mr-2" />
-            Estimated: 15-30 seconds
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
+**Implementation**: ScanProgress component using Laravel Echo WebSocket events
 ```
 
 ### Smart Empty States System
-```typescript
-// EmptyState.tsx - Contextual empty states with clear actions
-interface EmptyStateProps {
-  type: 'domains' | 'scans' | 'reports' | 'dashboard'
-  user: User
-  className?: string
-}
-
-interface EmptyStateConfig {
-  icon: React.ComponentType
-  title: string
-  description: string
-  primaryAction: {
-    label: string
-    action: () => void
-    variant?: 'default' | 'outline'
-  }
-  secondaryAction?: {
-    label: string
-    action: () => void
-  }
-  tips?: string[]
-}
-
-export function EmptyState({ type, user, className }: EmptyStateProps) {
-  const router = useRouter()
-  
-  const getEmptyStateConfig = (): EmptyStateConfig => {
-    const isTrialing = user.subscription_status === 'trialing'
-    const daysLeft = user.trial_ends_at ? dayjs(user.trial_ends_at).diff(dayjs(), 'day') : 0
-    
-    switch (type) {
-      case 'domains':
-        return {
-          icon: Globe,
-          title: isTrialing ? 'Add Your First Domain' : 'No Domains Yet',
-          description: isTrialing 
-            ? `You have ${daysLeft} days left in your trial. Add a domain to see what Achilleus can do!`
-            : 'Start monitoring your websites by adding your first domain.',
-          primaryAction: {
-            label: 'Add Domain',
-            action: () => router.visit('/domains/create'),
-            variant: 'default'
-          },
-          secondaryAction: isTrialing ? {
-            label: 'Try Demo Domain',
-            action: () => router.visit('/demo')
-          } : undefined,
-          tips: [
-            'Add up to 10 domains with your Solo Plan',
-            'HTTPS domains only for security',
-            'Unlimited scans included'
-          ]
-        }
-        
-      case 'scans':
-        return {
-          icon: Search,
-          title: 'No Scans Yet',
-          description: 'Run your first security scan to see detailed analysis of your website.',
-          primaryAction: {
-            label: 'Start First Scan',
-            action: () => router.visit('/domains?action=scan'),
-            variant: 'default'
-          },
-          secondaryAction: {
-            label: 'Add Another Domain',
-            action: () => router.visit('/domains/create')
-          },
-          tips: [
-            'Scans complete in under 30 seconds',
-            'Get detailed security recommendations',
-            'Track improvements over time'
-          ]
-        }
-        
-      case 'reports':
-        return {
-          icon: FileText,
-          title: 'No Reports Generated',
-          description: 'Create professional PDF reports to share your security analysis.',
-          primaryAction: {
-            label: 'Generate Your First Report',
-            action: () => router.visit('/activity?action=report'),
-            variant: 'default'
-          },
-          tips: [
-            'Professional PDF format',
-            'Perfect for client presentations',
-            'Includes actionable recommendations'
-          ]
-        }
-        
-      case 'dashboard':
-        return {
-          icon: BarChart3,
-          title: 'Welcome to Achilleus',
-          description: isTrialing 
-            ? `Your ${daysLeft}-day trial is active. Let's get started with your first security scan!`
-            : 'Start monitoring your website security today.',
-          primaryAction: {
-            label: 'Add Your First Domain',
-            action: () => router.visit('/domains/create'),
-            variant: 'default'
-          },
-          secondaryAction: {
-            label: 'View Demo',
-            action: () => router.visit('/demo')
-          },
-          tips: [
-            '10 domains included',
-            'Unlimited security scans',
-            'Professional PDF reports'
-          ]
-        }
-        
-      default:
-        throw new Error(`Unknown empty state type: ${type}`)
-    }
-  }
-
-  const config = getEmptyStateConfig()
-  const Icon = config.icon
-
-  return (
-    <div className={cn("text-center py-12", className)}>
-      <div className="mx-auto w-24 h-24 bg-muted rounded-full flex items-center justify-center mb-6">
-        <Icon className="h-8 w-8 text-muted-foreground" />
-      </div>
-      
-      <h3 className="text-lg font-semibold mb-2">{config.title}</h3>
-      <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-        {config.description}
-      </p>
-      
-      <div className="flex flex-col sm:flex-row gap-3 justify-center mb-8">
-        <Button 
-          variant={config.primaryAction.variant || 'default'}
-          onClick={config.primaryAction.action}
-          className="min-w-[140px]"
-        >
-          {config.primaryAction.label}
-        </Button>
-        
-        {config.secondaryAction && (
-          <Button 
-            variant="outline"
-            onClick={config.secondaryAction.action}
-            className="min-w-[140px]"
-          >
-            {config.secondaryAction.label}
-          </Button>
-        )}
-      </div>
-      
-      {config.tips && (
-        <div className="max-w-md mx-auto">
-          <p className="text-sm font-medium text-muted-foreground mb-3">
-            What you get:
-          </p>
-          <ul className="text-sm text-muted-foreground space-y-1">
-            {config.tips.map((tip, index) => (
-              <li key={index} className="flex items-center justify-center gap-2">
-                <Check className="h-3 w-3 text-green-500" />
-                {tip}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
-  )
-}
-```
+Context-aware empty states that adapt based on user trial status and progress. Provides clear actionable steps with value propositions for different page types (domains, scans, reports, dashboard).
 
 ### Security Score Explanation System
-```typescript
-// ScoreTooltip.tsx - Educational tooltips for scores and grades
-interface ScoreTooltipProps {
-  score: number
-  grade: string
-  module?: 'ssl_tls' | 'security_headers' | 'dns_email'
-  detailed?: boolean
-  children: React.ReactNode
-}
-
-export function ScoreTooltip({ score, grade, module, detailed, children }: ScoreTooltipProps) {
-  const getScoreExplanation = () => {
-    const getGradeInfo = (grade: string) => {
-      switch (grade) {
-        case 'A+': return { color: 'text-green-600', description: 'Excellent security configuration' }
-        case 'A': return { color: 'text-green-600', description: 'Very good security' }
-        case 'A-': return { color: 'text-green-500', description: 'Good security with minor issues' }
-        case 'B+': return { color: 'text-yellow-600', description: 'Acceptable with room for improvement' }
-        case 'B': return { color: 'text-yellow-600', description: 'Some security concerns' }
-        case 'B-': return { color: 'text-yellow-500', description: 'Multiple issues need attention' }
-        case 'C+': return { color: 'text-orange-600', description: 'Significant security gaps' }
-        case 'C': return { color: 'text-orange-600', description: 'Major security issues' }
-        case 'C-': return { color: 'text-orange-500', description: 'Poor security configuration' }
-        case 'D+': return { color: 'text-red-600', description: 'Very poor security' }
-        case 'D': return { color: 'text-red-600', description: 'Critical security failures' }
-        case 'D-': return { color: 'text-red-500', description: 'Dangerous security state' }
-        case 'F': return { color: 'text-red-700', description: 'Failed security check' }
-        default: return { color: 'text-gray-600', description: 'Unknown grade' }
-      }
-    }
-
-    const getModuleInfo = (module: string) => {
-      switch (module) {
-        case 'ssl_tls':
-          return {
-            title: 'SSL/TLS Security',
-            weight: '40%',
-            description: 'Certificate validity, protocol versions, cipher strength, and Perfect Forward Secrecy',
-            factors: [
-              'Certificate expiration and validity',
-              'TLS protocol version (1.2+ required)',
-              'Cipher suite strength',
-              'Perfect Forward Secrecy support',
-              'Certificate chain validation'
-            ]
-          }
-        case 'security_headers':
-          return {
-            title: 'Security Headers',
-            weight: '30%',
-            description: 'HTTP security headers that protect against common web vulnerabilities',
-            factors: [
-              'HSTS (HTTP Strict Transport Security)',
-              'Content Security Policy (CSP)',
-              'X-Content-Type-Options',
-              'X-Frame-Options',
-              'Referrer-Policy'
-            ]
-          }
-        case 'dns_email':
-          return {
-            title: 'DNS & Email Security',
-            weight: '30%',
-            description: 'DNS configuration and email authentication mechanisms',
-            factors: [
-              'SPF (Sender Policy Framework)',
-              'DKIM (DomainKeys Identified Mail)',
-              'DMARC (Domain-based Message Authentication)',
-              'CAA (Certificate Authority Authorization)',
-              'DNSSEC validation'
-            ]
-          }
-        default:
-          return null
-      }
-    }
-
-    const gradeInfo = getGradeInfo(grade)
-    const moduleInfo = module ? getModuleInfo(module) : null
-
-    return {
-      gradeInfo,
-      moduleInfo,
-      overallDescription: `Security score: ${score}/100 (${grade})`
-    }
-  }
-
-  const explanation = getScoreExplanation()
-
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          {children}
-        </TooltipTrigger>
-        <TooltipContent 
-          className="max-w-sm p-4"
-          side="top"
-          align="center"
-        >
-          <div className="space-y-3">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Badge 
-                  variant="outline"
-                  className={cn("font-bold", explanation.gradeInfo.color)}
-                >
-                  {grade}
-                </Badge>
-                <span className="font-semibold">{score}/100</span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {explanation.gradeInfo.description}
-              </p>
-            </div>
-
-            {explanation.moduleInfo && (
-              <div>
-                <h4 className="font-semibold text-sm flex items-center gap-2">
-                  {explanation.moduleInfo.title}
-                  <Badge variant="secondary" className="text-xs">
-                    {explanation.moduleInfo.weight}
-                  </Badge>
-                </h4>
-                <p className="text-xs text-muted-foreground mb-2">
-                  {explanation.moduleInfo.description}
-                </p>
-                
-                {detailed && (
-                  <div>
-                    <p className="text-xs font-medium mb-1">Factors checked:</p>
-                    <ul className="text-xs text-muted-foreground space-y-0.5">
-                      {explanation.moduleInfo.factors.map((factor, index) => (
-                        <li key={index} className="flex items-start gap-1">
-                          <span className="w-1 h-1 rounded-full bg-current mt-1.5 flex-shrink-0" />
-                          {factor}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="pt-2 border-t border-border">
-              <p className="text-xs text-muted-foreground">
-                Scores are calculated based on industry security standards and best practices.
-              </p>
-            </div>
-          </div>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  )
-}
-```
+Educational tooltip component that explains security scores (A+ to F grades), module weights (SSL/TLS 40%, Headers 30%, DNS/Email 30%), and assessment factors. Uses Shadcn/ui Tooltip with detailed explanations.
 
 ### Quick Actions System
-```typescript
-// QuickActions.tsx - Prominent action buttons throughout the app
-interface QuickActionsProps {
-  context: 'dashboard' | 'domains' | 'activity' | 'reports'
-  user: User
-  data?: any
-}
-
-export function QuickActions({ context, user, data }: QuickActionsProps) {
-  const router = useRouter()
-  const [isScanning, setIsScanning] = useState(false)
-  
-  const getContextActions = () => {
-    switch (context) {
-      case 'dashboard':
-        return {
-          primary: {
-            label: data?.domains?.length > 0 ? 'Scan All Domains' : 'Add First Domain',
-            icon: data?.domains?.length > 0 ? Search : Plus,
-            action: () => {
-              if (data?.domains?.length > 0) {
-                handleScanAll()
-              } else {
-                router.visit('/domains/create')
-              }
-            },
-            loading: isScanning
-          },
-          secondary: [
-            {
-              label: 'Generate Report',
-              icon: FileText,
-              action: () => router.visit('/reports/create'),
-              disabled: !data?.hasScans
-            },
-            {
-              label: 'View Activity',
-              icon: Clock,
-              action: () => router.visit('/activity'),
-              badge: data?.recentScansCount
-            }
-          ]
-        }
-        
-      case 'domains':
-        return {
-          primary: {
-            label: 'Add Domain',
-            icon: Plus,
-            action: () => router.visit('/domains/create')
-          },
-          secondary: [
-            {
-              label: 'Scan All',
-              icon: Search,
-              action: () => handleScanAll(),
-              disabled: !data?.domains?.length,
-              loading: isScanning
-            },
-            {
-              label: 'Export List',
-              icon: Download,
-              action: () => handleExport(),
-              disabled: !data?.domains?.length
-            }
-          ]
-        }
-        
-      case 'activity':
-        return {
-          primary: {
-            label: 'New Scan',
-            icon: Search,
-            action: () => router.visit('/domains?action=scan')
-          },
-          secondary: [
-            {
-              label: 'Generate Report',
-              icon: FileText,
-              action: () => router.visit('/reports/create'),
-              disabled: !data?.scans?.length
-            },
-            {
-              label: 'Download CSV',
-              icon: Download,
-              action: () => handleDownloadCsv(),
-              disabled: !data?.scans?.length
-            }
-          ]
-        }
-        
-      case 'reports':
-        return {
-          primary: {
-            label: 'Generate Report',
-            icon: FileText,
-            action: () => router.visit('/reports/create')
-          },
-          secondary: [
-            {
-              label: 'New Scan',
-              icon: Search,
-              action: () => router.visit('/domains?action=scan')
-            },
-            {
-              label: 'Schedule Report',
-              icon: Calendar,
-              action: () => handleScheduleReport(),
-              badge: 'Pro'
-            }
-          ]
-        }
-    }
-  }
-
-  const handleScanAll = async () => {
-    setIsScanning(true)
-    try {
-      await router.post('/domains/scan-all')
-      // Show scan progress modal
-    } catch (error) {
-      // Handle error
-    } finally {
-      setIsScanning(false)
-    }
-  }
-
-  const actions = getContextActions()
-
-  return (
-    <div className="flex flex-col sm:flex-row gap-3">
-      <Button 
-        size="default"
-        onClick={actions.primary.action}
-        disabled={actions.primary.loading}
-        className="min-w-[140px]"
-      >
-        {actions.primary.loading ? (
-          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-        ) : (
-          <actions.primary.icon className="h-4 w-4 mr-2" />
-        )}
-        {actions.primary.label}
-      </Button>
-      
-      <div className="flex gap-2">
-        {actions.secondary.map((action, index) => (
-          <Button
-            key={index}
-            variant="outline"
-            onClick={action.action}
-            disabled={action.disabled || action.loading}
-            className="relative"
-          >
-            {action.loading ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <action.icon className="h-4 w-4 mr-2" />
-            )}
-            {action.label}
-            {action.badge && (
-              <Badge 
-                variant="secondary" 
-                className="ml-2 h-5 text-xs"
-              >
-                {action.badge}
-              </Badge>
-            )}
-          </Button>
-        ))}
-      </div>
-    </div>
-  )
-}
-```
+Context-aware action buttons throughout the app (dashboard, domains, activity, reports). Primary and secondary actions adapt based on user data and page context with loading states and disabled conditions.
 
 ### Backend Support for UX Enhancements
+WebSocket events for real-time scan progress tracking, user progress analytics for trial conversion, and automated email sequences based on user behavior patterns.
+## Summary
 
-#### WebSocket Events for Real-Time Progress
-```php
-// app/Events/ScanStepStarted.php
-namespace App\Events;
-
-use Illuminate\Broadcasting\Channel;
-use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
-
-class ScanStepStarted implements ShouldBroadcast
-{
-    use InteractsWithSockets;
-    
-    public function __construct(
-        public string $scanId,
-        public int $stepIndex,
-        public string $stepName
-    ) {}
-    
-    public function broadcastOn(): Channel
-    {
-        return new Channel("scan.{$this->scanId}");
-    }
-    
-    public function broadcastAs(): string
-    {
-        return 'ScanStepStarted';
-    }
-}
-
-// app/Events/ScanStepProgress.php 
-class ScanStepProgress implements ShouldBroadcast
-{
-    public function __construct(
-        public string $scanId,
-        public int $stepIndex,
-        public int $progress,
-        public ?string $message = null
-    ) {}
-}
-
-// app/Events/ScanStepCompleted.php
-class ScanStepCompleted implements ShouldBroadcast
-{
-    public function __construct(
-        public string $scanId,
-        public int $stepIndex,
-        public array $result
-    ) {}
-}
-```
-
-#### Enhanced Scan Job with Progress Broadcasting
-```php
-// app/Jobs/RunDomainScan.php - Enhanced with progress updates
-class RunDomainScan implements ShouldQueue
-{
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
-    
-    public function handle(
-        SecurityHeadersScanner $headersScanner,
-        SslTlsScanner $sslScanner, 
-        DnsEmailScanner $dnsScanner,
-        SecurityScorer $scorer
-    ): void {
-        $scanners = [
-            ['scanner' => $sslScanner, 'name' => 'SSL/TLS Analysis'],
-            ['scanner' => $headersScanner, 'name' => 'Security Headers'],
-            ['scanner' => $dnsScanner, 'name' => 'DNS/Email Security']
-        ];
-        
-        $results = [];
-        
-        foreach ($scanners as $index => $scannerData) {
-            // Broadcast step started
-            broadcast(new ScanStepStarted(
-                $this->scan->id,
-                $index,
-                $scannerData['name']
-            ));
-            
-            try {
-                // Simulate progress updates during scanning
-                $this->broadcastProgress($index, 25, 'Connecting...');
-                
-                $context = [
-                    'email_mode' => $this->scan->domain->email_mode,
-                    'dkim_selector' => $this->scan->domain->dkim_selector
-                ];
-                
-                $this->broadcastProgress($index, 75, 'Analyzing...');
-                
-                $result = $scannerData['scanner']->scan(
-                    $this->scan->domain->url, 
-                    $context
-                );
-                
-                $results[$result->module] = $result;
-                
-                $this->broadcastProgress($index, 100, 'Complete');
-                
-                // Broadcast step completed
-                broadcast(new ScanStepCompleted(
-                    $this->scan->id,
-                    $index,
-                    $result->toArray()
-                ));
-                
-            } catch (\Exception $e) {
-                broadcast(new ScanStepFailed(
-                    $this->scan->id,
-                    $index,
-                    $e->getMessage()
-                ));
-                throw $e;
-            }
-        }
-        
-        // Final scoring step
-        broadcast(new ScanStepStarted(
-            $this->scan->id,
-            count($scanners),
-            'Calculating Score'
-        ));
-        
-        $scores = collect($results)->pluck('score', 'module')->toArray();
-        $scoring = $scorer->calculate($scores);
-        
-        broadcast(new ScanCompleted(
-            $this->scan->id,
-            $scoring
-        ));
-    }
-    
-    private function broadcastProgress(int $stepIndex, int $progress, string $message): void
-    {
-        broadcast(new ScanStepProgress(
-            $this->scan->id,
-            $stepIndex,
-            $progress,
-            $message
-        ));
-        
-        // Small delay to show progress visually
-        usleep(500000); // 0.5 seconds
-    }
-}
-```
-
-#### Trial Progress Tracking Service
-```php
-// app/Services/TrialProgressService.php
-namespace App\Services;
-
-use App\Models\User;
-use Illuminate\Support\Facades\Cache;
-
-class TrialProgressService
-{
-    public function getTrialProgress(User $user): array
-    {
-        $cacheKey = "trial_progress:{$user->id}";
-        
-        return Cache::remember($cacheKey, 300, function () use ($user) {
-            $daysRemaining = $user->trial_ends_at 
-                ? now()->diffInDays($user->trial_ends_at, false)
-                : 0;
-                
-            $domainsAdded = $user->domains()->count();
-            $scansCompleted = $user->scans()->where('status', 'completed')->count();
-            $reportsGenerated = $user->reports()->count();
-            
-            // Calculate completion percentage
-            $weights = [
-                'domain_added' => $domainsAdded > 0 ? 25 : 0,
-                'first_scan' => $scansCompleted > 0 ? 40 : 0,
-                'first_report' => $reportsGenerated > 0 ? 25 : 0,
-                'viewed_billing' => $user->viewed_billing ? 10 : 0,
-            ];
-            
-            $completionPercentage = array_sum($weights);
-            
-            return [
-                'days_remaining' => max(0, $daysRemaining),
-                'domains_added' => $domainsAdded,
-                'scans_completed' => $scansCompleted,
-                'reports_generated' => $reportsGenerated,
-                'completion_percentage' => $completionPercentage,
-                'next_milestone' => $this->getNextMilestone($weights, $user)
-            ];
-        });
-    }
-    
-    private function getNextMilestone(array $weights, User $user): array
-    {
-        if ($weights['domain_added'] === 0) {
-            return [
-                'action' => 'add_domain',
-                'title' => 'Add Your First Domain',
-                'description' => 'Start monitoring your website security',
-                'points' => 25
-            ];
-        }
-        
-        if ($weights['first_scan'] === 0) {
-            return [
-                'action' => 'run_scan',
-                'title' => 'Run Your First Scan',
-                'description' => 'See detailed security analysis',
-                'points' => 40
-            ];
-        }
-        
-        if ($weights['first_report'] === 0) {
-            return [
-                'action' => 'generate_report',
-                'title' => 'Generate PDF Report',
-                'description' => 'Create professional security documentation',
-                'points' => 25
-            ];
-        }
-        
-        return [
-            'action' => 'upgrade',
-            'title' => 'Upgrade to Continue',
-            'description' => 'Keep monitoring your security',
-            'points' => 0
-        ];
-    }
-    
-    public function trackProgressEvent(User $user, string $event, array $metadata = []): void
-    {
-        // Clear cache to refresh progress
-        Cache::forget("trial_progress:{$user->id}");
-        
-        // Track the event for analytics
-        event(new TrialProgressEvent($user, $event, $metadata));
-        
-        // Update user flags
-        match ($event) {
-            'viewed_billing' => $user->update(['viewed_billing' => true]),
-            'completed_onboarding' => $user->update(['completed_onboarding' => true]),
-            default => null
-        };
-    }
-}
-```
-
-#### Empty State Data Controllers
-```php
-// app/Http/Controllers/DashboardController.php - Enhanced with empty state data
-class DashboardController extends Controller
-{
-    public function index(TrialProgressService $trialService)
-    {
-        $user = auth()->user();
-        $domains = $user->domains()->with('latestScan')->get();
-        $recentScans = $user->scans()->latest()->limit(5)->with('domain')->get();
-        
-        // Calculate dashboard metrics
-        $metrics = [
-            'security_score' => $domains->whereNotNull('last_scan_score')->avg('last_scan_score'),
-            'active_domains' => $domains->where('is_active', true)->count(),
-            'critical_issues' => $domains->where('last_scan_score', '<', 60)->count(),
-            'last_scan' => $recentScans->first()
-        ];
-        
-        // Get trial progress for context-aware messaging
-        $trialProgress = $trialService->getTrialProgress($user);
-        
-        // Determine empty state or show data
-        $isEmpty = $domains->isEmpty();
-        
-        return inertia('Dashboard/Index', [
-            'metrics' => $metrics,
-            'domains' => $domains,
-            'recentScans' => $recentScans,
-            'trialProgress' => $trialProgress,
-            'isEmpty' => $isEmpty,
-            'quickActions' => [
-                'hasScans' => $recentScans->isNotEmpty(),
-                'recentScansCount' => $recentScans->count()
-            ]
-        ]);
-    }
-}
-
-// app/Http/Controllers/DomainsController.php - Enhanced with empty states  
-class DomainsController extends Controller
-{
-    public function index()
-    {
-        $user = auth()->user();
-        $domains = $user->domains()->with('latestScan')->paginate(10);
-        
-        return inertia('Domains/Index', [
-            'domains' => $domains,
-            'isEmpty' => $domains->isEmpty(),
-            'quickActions' => [
-                'canScanAll' => $domains->isNotEmpty(),
-                'domainCount' => $domains->count(),
-                'maxDomains' => 10
-            ]
-        ]);
-    }
-}
-```
-
-#### Bulk Scan Operations
-```php
-// app/Http/Controllers/BulkScanController.php
-namespace App\Http\Controllers;
-
-class BulkScanController extends Controller
-{
-    public function scanAll(Request $request)
-    {
-        $user = auth()->user();
-        $domains = $user->domains()->where('is_active', true)->get();
-        
-        if ($domains->isEmpty()) {
-            return response()->json([
-                'message' => 'No domains to scan'
-            ], 400);
-        }
-        
-        $scanIds = [];
-        
-        foreach ($domains as $domain) {
-            $scan = $domain->scans()->create([
-                'user_id' => $user->id,
-                'status' => 'pending'
-            ]);
-            
-            RunDomainScan::dispatch($scan);
-            $scanIds[] = $scan->id;
-        }
-        
-        return response()->json([
-            'message' => 'Bulk scan started',
-            'scan_ids' => $scanIds,
-            'count' => count($scanIds)
-        ]);
-    }
-}
-```
-
-This technical documentation provides a complete blueprint for building Achilleus with production-ready code examples and architecture decisions.
+This technical documentation provides a comprehensive architecture for building Achilleus - a security monitoring SaaS platform with Laravel 12, React 19, and robust scanner implementations focusing on essential security analysis while maintaining production-ready code standards.
