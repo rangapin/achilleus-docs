@@ -1,334 +1,739 @@
 # Achilleus Product Documentation
 
-## Market Opportunity: $1.2B Gap in Affordable Security Monitoring
+## Executive Summary
 
-Achilleus addresses a massive underserved market where **75% of freelancers and small agencies lack adequate security monitoring** due to prohibitive costs. With 127,000 freelance web developers and 200,000 small digital agencies actively seeking security solutions, yet only 25% currently using website security tools, the market opportunity is substantial.
+Achilleus is a security monitoring SaaS that provides comprehensive website security scanning at $27/month for up to 10 domains. Built for developers and freelancers managing multiple websites, it delivers enterprise-grade security analysis at 90% less cost than competitors.
 
-## Revolutionary Value Proposition: 97% Cost Savings
+## Market Position
 
-### The Pricing Disruption
-**Achilleus delivers $250+ competitor functionality for $27/month** - a 97% cost savings that transforms security monitoring from luxury to necessity:
+### Target Market
+- **Primary**: 127,000+ freelance developers managing 5-20 websites
+- **Secondary**: Small businesses with multiple web properties
+- **Tertiary**: Security-conscious developers needing documentation
 
-- **SiteLock**: $24.99/site = $250/month for 10 domains
-- **Sucuri**: $28/site = $280/month for 10 domains  
-- **MalCare**: $24.92/site = $249/month for 10 domains
-- **Achilleus**: $27/month for 10 domains + professional reports
+### Value Proposition
+**"Enterprise security monitoring at freelancer pricing"**
+- 10 domains for $27/month (competitors: $250+/month)
+- Unlimited security scans (no usage limits)
+- Professional PDF reports included
+- Single comprehensive scan covering all security vectors
 
-### Target Market Validation
-- **127,524 freelance developers** earning $40-72K annually seeking affordable multi-domain monitoring
-- **200,000 small agencies** operating on 15% margins, price-sensitive but quality-focused
-- **61% of SMBs targeted by cyberattacks** yet enterprise solutions start at $965/month minimum
-- **Market growth of 10.5% annually** reaching $14.3B by 2033
+### Competitive Advantage
+- **97% cost savings** vs per-site pricing models
+- **No client management complexity** - simple, focused tool
+- **8/10 security coverage** - optimal balance of completeness and reliability
+- **<15 second scans** - fast enough for real-time use
 
-### Psychological Pricing Sweet Spot
-At $27/month, Achilleus occupies the optimal position:
-- **Above basic uptime monitors** ($5-15) - signals serious value, not cheap tools
-- **Below security platforms** ($50+) - remains accessible to price-sensitive freelancers  
-- **Enables 300-400% markup** for agencies selling to clients, creating win-win value
+## Product Features
 
-## Core Value Drivers
+### Core Functionality
 
-### 1. Multi-Domain Economics
-**Finally, security monitoring that doesn't cost more than hosting**
-- Freelancers typically manage 5-20 client sites
-- Competitors force per-site licensing creating cost explosion
-- Achilleus bundles 10 domains matching real workflow needs
+#### 1. Security Scanning (One Comprehensive Scan)
+**SSL/TLS Analysis (40% weight)**
+- Certificate validation and expiration monitoring
+- Protocol version checking (TLS 1.2+)
+- Cipher suite strength analysis
+- Perfect Forward Secrecy verification
 
-### 2. Comprehensive Security Analysis  
-**Three critical vectors in one scan (40% SSL/TLS, 30% Headers, 30% DNS/Email)**
-- SSL/TLS certificate monitoring prevents immediate SEO/trust damage
-- Security headers analysis (missing from 60% of competitors)
-- DNS/email security (SPF, DKIM, DMARC) for complete protection
+**Security Headers (30% weight)**
+- HSTS configuration analysis
+- Content Security Policy evaluation
+- X-Frame-Options verification
+- X-Content-Type-Options checking
+- Referrer-Policy assessment
 
-### 3. Professional Client Communication
-**PDF reporting solves the biggest agency pain point**
-- White-labeled reports with executive summaries
-- Visual security scores non-technical clients understand  
-- Eliminates manual report creation consuming hours monthly
-- Competitors charge $1-5/site extra for this feature
+**DNS/Email Security (30% weight)**
+- SPF record validation
+- DKIM verification (with custom selectors)
+- DMARC policy analysis
+- DNSSEC status checking
+- CAA record verification
 
-## Competitive Landscape: Massive Pricing Inefficiencies
+#### 2. Domain Management
+- Add up to 10 domains per account
+- HTTPS-only (security-first approach)
+- Email configuration options (expected/none)
+- Custom DKIM selector support
+- Domain validation with helpful feedback
 
-### Direct Competitors Analysis
-**Single-domain pricing models fail freelancers managing multiple client sites:**
+#### 3. Dashboard & Monitoring
+**Four Key Metrics**
+- Security Score (0-100 with letter grade)
+- Active Domains (X of 10 available)
+- Last Scan (time and domain)
+- Critical Issues (domains scoring <60)
 
-- **SiteLock**: $24.99/month per domain, lacks comprehensive headers analysis
-- **Sucuri**: $28/month per site, WordPress-focused with limited platform support  
-- **WebTotem**: $18/month for 50 sites (closest competitor) but limited brand recognition
-- **MalCare**: $24.92/month per site, basic SSL only, no DNS security
-- **Wordfence**: $29/month per site, WordPress plugin limitations
-- **Cloudflare Pro**: $25/month, requires technical expertise, no client reports
+**Security Trends**
+- 7, 30, 90-day, and 1-year views
+- Visual score progression
+- Historical comparison
 
-### Enterprise Solutions Pricing Gap
-**Complex platforms price out the target market:**
-- **Rapid7**: $965/month minimum (512-asset commitment)
-- **Qualys**: $2,275+ annually with module complexity
-- **Tenable**: Enterprise-only with dedicated security team requirements
+#### 4. Professional Reporting
+**PDF Reports Include**
+- Executive summary with overall score
+- Module-by-module breakdown
+- Prioritized recommendations
+- Technical details for developers
+- Achilleus branding
 
-### Market Positioning Advantage
-Achilleus fills the gap between:
-- **Basic uptime monitors** ($5-15/month) - insufficient security coverage
-- **Enterprise platforms** ($965+/month) - overpriced and overcomplicated
+#### 5. Activity Tracking
+- Complete scan history
+- Filter by domain, date, score
+- One-click report generation
+- Score trend analysis
 
-## Current Market Pain Points (Research-Validated)
+#### 6. Email Communication System
+- Welcome email sequence for trial activation
+- Automated trial reminders (days 7, 10, 12, 14)
+- Scan completion notifications with results summary
+- Billing and payment confirmation emails
+- Preference management and unsubscribe options
 
-### 1. Time Consumption from Tool Fragmentation  
-- **40% of sites use non-WordPress platforms** yet most tools are WordPress-specific
-- Developers "jumping from site to site" for security checks
-- Administrative overhead consuming billable hours
+#### 7. Support Infrastructure
+- Multi-channel contact form with intelligent routing
+- Comprehensive FAQ system with search functionality
+- In-app feedback widget for user insights
+- Knowledge base integration for self-service
 
-### 2. Alert Overload Without Prioritization
-- Multiple tools creating notification chaos
-- No unified view across client portfolio  
-- Difficulty identifying genuine threats vs false positives
+#### 8. Guided Onboarding Flow
+- Interactive welcome sequence with personalization
+- Real-time first scan progress with educational content
+- Achievement system with milestone celebrations
+- Progressive feature discovery to reduce overwhelm
+- Onboarding analytics for conversion optimization
 
-### 3. Manual Reporting Complexity
-- Agencies cobbling together reports from multiple sources
-- No standardized client communication format
-- Hours spent creating security summaries monthly
+#### 9. Legal & Compliance
+- GDPR-compliant Terms of Service and Privacy Policy
+- Cookie consent management with user preferences
+- Data export and account deletion functionality
+- Legal document versioning and acceptance tracking
 
-### 4. Cost Scaling Problems
-- Per-site pricing models creating cost explosion as agencies grow
-- Enterprise minimums excluding small agencies entirely
-- Feature restrictions forcing multiple tool subscriptions
+### User Experience
 
-## Business Model Advantages
+#### Navigation Structure
+```
+Dashboard (default view)
+├── Domains (manage websites)
+├── Activity (scan history)  
+└── Reports (PDF downloads)
 
-### Subscription Economics
-- **$27/month recurring** with 10-domain value bundle
-- **14-day free trial** (optimal for technical user evaluation)
-- **No credit card required** for frictionless signup reducing barriers
-- **Annual discounts available** for improved cash flow and retention
+Profile Menu:
+├── Profile Settings
+├── Subscription (billing management)
+└── Sign Out
+```
 
-### Agency-Friendly Pricing Structure  
-- **Predictable costs** agencies can factor into client proposals
-- **Built-in markup opportunity** allowing 300-400% service pricing
-- **Room for growth** from 5-domain startups to 10-domain capacity
-- **Clear upgrade path** to future higher-tier plans
+## Design System & UI Specifications
 
-### Market Penetration Strategy
-- **Land and expand** model capturing market share with unbeatable pricing
-- **Category creation** positioning as "freelancer security tools" vs generic monitoring
-- **Developer-first approach** with CLI tools, API access, and workflow integrations
+### Color Scheme
+- **Primary Background**: Black (#000000) or very dark gray (#0a0a0b)
+- **Card Backgrounds**: Dark gray (#1a1a1a)
+- **Text Primary**: White (#ffffff)
+- **Text Secondary**: Light gray (#a0a0a0)
+- **Accent Colors**:
+  - Success/Green: #22c55e (scores 80+)
+  - Warning/Orange: #f59e0b (scores 60-79)
+  - Danger/Red: #ef4444 (scores <60, critical issues)
+  - Info/Blue: #3b82f6 (trial banner, action buttons)
 
-### Dashboard & Monitoring
-- **4-Card Metrics Display**: Security Score, Active Domains, Last Scan Date, Critical Issues
-- **Security Trends Chart**: Interactive charts with 7/30/90 day and 1-year trend analysis
-- **Trial Status Tracking**: Clear trial countdown with strategic upgrade prompts
-- **Domain Usage Monitoring**: Clear indication of domain limits (X of 10 domains used)
-- **Real-time Updates**: Live dashboard updates as scans complete
+### Typography
+- **Font Family**: System font stack (Inter or similar)
+- **Heading Sizes**: 
+  - H1: 2.5rem (40px) - Page titles
+  - H2: 2rem (32px) - Section headers
+  - H3: 1.5rem (24px) - Card titles
+- **Body Text**: 0.875rem (14px)
+- **Small Text**: 0.75rem (12px) - Subtitles, metadata
 
-### Domain Management
-- **Complete CRUD Operations**: Add, view, edit, delete domains with validation
-- **Advanced Domain Validation**: Real-time URL validation with helpful user feedback
-- **Flexible Scan Triggering**: Individual domain scans and bulk "Scan All Domains" operations
-- **Email Configuration**: Support for domains with and without email services
-- **DKIM Selector Support**: Custom DKIM selector configuration for advanced email security
-- **Usage Tracking**: Clear domain limit display and intelligent management
-- **Scan History**: Per-domain scan history with detailed results access
+## Data-Driven UI Components
 
-### Reporting System
-- **Professional PDF Generation**: High-quality reports with consistent Achilleus branding
-- **Comprehensive Report History**: Download and re-download previously generated reports
-- **Client-Ready Design**: Professional formatting suitable for client presentations and audits
-- **Flexible Report Filtering**: Filter reports by type, date range, and domain
-- **Bulk Report Generation**: Generate multiple reports efficiently with auto-scaling infrastructure
+### Dashboard Cards (Dynamic Data)
+```
+Card Layout: 2x2 Grid
 
-### Activity & History
-- **Comprehensive Scan History**: All scans with advanced filtering capabilities
-- **Multi-dimensional Filtering**: Filter by domain, date range, scan type, and status
-- **Detailed Results Access**: Complete scan results accessible from history
-- **Report Generation**: Generate professional reports from any historical scan data
-- **Performance Analytics**: Track scan completion times and success rates
+┌─────────────────────────┐ ┌─────────────────────────┐
+│ SECURITY SCORE          │ │ ACTIVE DOMAINS          │
+│                         │ │                         │
+│ {avg_score}/100         │ │ {domain_count}          │
+│ {grade_badge}           │ │ {count}/{max} available │
+│ {vs_industry_text}      │ │                         │
+└─────────────────────────┘ └─────────────────────────┘
 
-## User Interface
+┌─────────────────────────┐ ┌─────────────────────────┐
+│ LAST SCAN               │ │ CRITICAL ISSUES         │
+│                         │ │                         │
+│ {time_ago}              │ │ {critical_count}        │
+│ {domain_name}           │ │ {issues_text}           │
+│ {date_range}            │ │                         │
+└─────────────────────────┘ └─────────────────────────┘
+```
 
-### Navigation Structure
-- **Collapsible Sidebar**: Dashboard, Domains, Activity, Reports with responsive design
-- **Profile Management**: Dropdown with billing, account settings, and preferences
-- **Trial Banner**: Prominent trial status display with clear upgrade path
-- **Responsive Design**: Mobile-first approach with desktop enhancement
-- **Dark Theme**: Consistent #0a0a0b background throughout application
+**Data Sources:**
+- `{avg_score}`: ROUND(AVG(domains.last_scan_score)) WHERE user_id = auth_user
+- `{grade_badge}`: Calculated from avg_score using grade mapping
+- `{vs_industry_text}`: "Above/Below industry average" (70 = industry baseline)
+- `{domain_count}`: COUNT(domains) WHERE user_id = auth_user AND is_active = true
+- `{count}/{max}`: domain_count + "/" + plan_config.max_domains
+- `{time_ago}`: Latest scans.completed_at formatted as relative time
+- `{domain_name}`: domain.display_name from latest scan
+- `{critical_count}`: COUNT(domains) WHERE last_scan_score < 60
+- `{issues_text}`: "Require attention" if > 0, else "All good"
 
-### Dashboard Layout
-- **Security Score Card**: Current overall security score with trend indicators and historical context
-- **Active Domains Card**: Domain count with clear usage limit display and management links
-- **Last Scan Date Card**: Most recent scan timestamp with relative time indication
-- **Critical Issues Card**: Count of issues requiring immediate attention with direct links
-- **Security Trends Chart**: Visual representation of security improvements over time with multiple time periods
+### Security Score Trends Chart (Dynamic)
+```
+Chart Component
+┌─────────────────────────────────────────────────────────────┐
+│ Security Score Trends              [Time Period Dropdown ▼] │
+│                                                             │
+│ 100 │                                                       │
+│  80 │ {bars_rendered_from_historical_scan_data}             │
+│  60 │                                                       │
+│  40 │                                                       │
+│  20 │                                                       │
+│   0 └─┬─────┬─────┬─────┬─────┬─────┬─────┬──               │
+│      {time_periods_based_on_selection}                      │
+└─────────────────────────────────────────────────────────────┘
+```
 
-### Comprehensive Scan Results Display
-- **Overall Security Score**: Prominent security score with letter grade (A+ to F)
-- **SSL/TLS Grade**: Dedicated SSL certificate analysis with detailed expiration status
-- **Scan Coverage Indicator**: Visual representation showing scan completeness and module status
-- **Security Headers Analysis**: Detailed breakdown of configured headers with recommendations
-- **DNS & Network Security**: DNSSEC status, email security configuration, and network analysis
-- **Actionable Recommendations**: Specific, prioritized security improvement suggestions
-- **Historical Comparison**: Compare current results with previous scans
+**Data Source:** 
+```sql
+SELECT DATE_TRUNC('day/week/month', created_at) as period,
+       AVG(total_score) as avg_score
+FROM scans 
+WHERE user_id = auth_user 
+  AND created_at >= {selected_range_start}
+GROUP BY period 
+ORDER BY period
+```
 
-## Pricing & Plans
+### Page Layouts (Data-Driven)
+
+#### 1. Profile Settings Page
+```
+Profile Settings
+┌─────────────────────────────────────────────────────────────────────────┐
+│ ┌─────────────────┐  ┌─────────────────────────┐  ┌─────────────────────┐ │
+│ │   {initials}    │  │ Full Name  Email Address│  │  Account Status     │ │
+│ │ [Change Avatar] │  │ {input}    {input}      │  │ Plan: {plan_badge}  │ │
+│ └─────────────────┘  │ [Save Changes]          │  │ Status: {status}    │ │
+│                      └─────────────────────────┘  │ Member: {date}      │ │
+│ ┌──────────────────────────────────────────────┐  └─────────────────────┘ │
+│ │            Change Password                   │  ┌─────────────────────┐ │
+│ │ Current: {input}                             │  │    Quick Stats      │ │
+│ │ New: {input}  Confirm: {input}               │  │ Domains: {count}    │ │
+│ │ [Update Password]                            │  │ Scans: {count}      │ │
+│ └──────────────────────────────────────────────┘  │ Reports: {count}    │ │
+│                                                   └─────────────────────┘ │
+│ ┌─────────────────────────────────────────────────────────────────────────┤
+│ │                      Danger Zone                                       │ │
+│ │ Once you delete your account, there is no going back                   │ │
+│ │ [Delete Account]                                                       │ │
+│ └─────────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 2. Domains Page
+```
+Domains                                          [Scan Now] [Add Domain]
+┌─────────────────────────────────────────────────────────────────────────┐
+│ Domain Name           │ Last Scan Date    │ Security Score │ Actions    │
+├─────────────────────────────────────────────────────────────────────────┤
+│ {domain.url}          │ {scan.date}       │ {score}{grade} │ 👁🔍🗑    │
+│ {domain.display}      │ {time_ago}        │ {color_coded}  │            │
+│                       │                   │                │            │
+│ [Empty State: No domains yet - Add your first domain]                   │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 3. Activity Page
+```
+Activity                                             [Generate Report]
+┌─────────────────────────────────────────────────────────────────────────┐
+│ [All Domains ▼] [Last 30 days ▼]                                       │
+│                                                                         │
+│ Date & Time       │ Domain Name    │ Scan Type │ Score     │ Actions    │
+├─────────────────────────────────────────────────────────────────────────┤
+│ {scan.created_at} │ {domain.url}   │ Full Scan │ {score}   │ 👁📊       │
+│ {time_ago}        │ {display_name} │           │ {grade}   │            │
+│                   │                │           │           │            │
+│ [Empty State: No scan activity - Run your first scan]                  │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 4. Reports Page
+```
+Reports                                          [Download Selected]
+┌─────────────────────────────────────────────────────────────────────────┐
+│                               📄                                       │
+│                                                                         │
+│                         No reports yet                                 │
+│                                                                         │
+│           Generate your first security report to get started           │
+│                                                                         │
+│                    [Generate Your First Report]                        │
+│                                                                         │
+│ [Future State with Data]                                                │
+│ Report Name        │ Date Generated │ Type │ Status │ Actions          │
+│ {report.filename}  │ {created_at}   │ PDF  │ Ready  │ ⬇ 👁 🗑          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 5. Subscription/Billing Page
+```
+Billing & Subscription
+┌─────────────────────────────────────────────────────────────────────────┐
+│ ┌───────────────────────────┐ ┌─────────────────────────────────────────┐ │
+│ │      Current Plan         │ │         Usage This Month                │ │
+│ │ {plan.name} {trial_badge} │ │ Domains: {used}/{max} {progress_bar}    │ │
+│ │ ${plan.price}/month       │ │ Scans: {used}/{limit} {progress_bar}    │ │
+│ │ {max_domains} domains     │ │                                         │ │
+│ │ [Change] [Cancel]         │ │         Payment Method                  │ │
+│ └───────────────────────────┘ │ 💳 **** **** **** {last4}               │ │
+│                               │ Expires {month}/{year}                  │ │
+│ ┌─────────────────────────────────────────────────────────────────────┐ │ │
+│ │                    Billing History                                 │ │ │
+│ │ {plan.name} - {month} {year}  [{status}] ${amount}  [⬇]           │ │ │
+│ │ {invoice_date}                                                     │ │ │
+│ └─────────────────────────────────────────────────────────────────────┘ │ │
+│                               │         Need Help?                      │ │
+│                               │ [📧 Contact Support]                    │ │
+│                               └─────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 6. Domain Detail Page
+```
+{domain.url}                                             [🔄 New Scan]
+┌─────────────────────────────────────────────────────────────────────────┐
+│ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────────────────┐ │
+│ │ Overall Score   │ │ SSL/TLS Grade   │ │     Scan Coverage           │ │
+│ │ {total_score}   │ │ {ssl_grade}     │ │ {completion_icon}           │ │
+│ │ /100            │ │ {days_left}     │ │ {coverage_text}             │ │
+│ │ {status_badge}  │ │ {protocol_info} │ │ {scan_type}                 │ │
+│ └─────────────────┘ └─────────────────┘ └─────────────────────────────┘ │
+│                                                                         │
+│ ┌─────────────────────────────┐ ┌─────────────────────────────────────┐ │
+│ │      Security Headers       │ │          DNS & Network              │ │
+│ │ {configured}/{total} config │ │ {dnssec_badge}                      │ │
+│ │ • HSTS {status_badge}       │ │ 📧 Email Security                   │ │
+│ │ • CSP {status_badge}        │ │ {spf_badge} {dmarc_badge}           │ │
+│ │ • X-Frame {status_badge}    │ │ 🔌 Open Ports                       │ │
+│ │ • X-Content {status_badge}  │ │ {port_count} detected               │ │
+│ │ • Referrer {status_badge}   │ │                                     │ │
+│ └─────────────────────────────┘ └─────────────────────────────────────┘ │
+│                                                                         │
+│ Recommended Actions                                                     │
+│ ┌─────────────────────────────────────────────────────────────────────┐ │
+│ │ • {priority_badge} {recommendation_text}                           │ │
+│ │ • {priority_badge} {recommendation_text}                           │ │
+│ │ • {priority_badge} {recommendation_text}                           │ │
+│ └─────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Complete Data Source Mapping
+
+**Every UI element maps to real database data:**
+
+```php
+// Dashboard Data
+$dashboardData = [
+    'avg_score' => DB::table('domains')
+        ->where('user_id', auth()->id())
+        ->whereNotNull('last_scan_score')
+        ->avg('last_scan_score'),
+    'domain_count' => auth()->user()->domains()->where('is_active', true)->count(),
+    'max_domains' => config('plans.solo.max_domains'), // 10
+    'critical_count' => auth()->user()->domains()->where('last_scan_score', '<', 60)->count(),
+    'last_scan' => auth()->user()->scans()->latest()->with('domain')->first(),
+    'trial_days_remaining' => auth()->user()->trial_ends_at->diffInDays(now()),
+];
+
+// Profile Data
+$profileData = [
+    'initials' => substr(auth()->user()->name, 0, 1) . substr(explode(' ', auth()->user()->name)[1] ?? '', 0, 1),
+    'plan_name' => auth()->user()->subscription_status === 'trialing' ? 'Solo Plan' : 'Active',
+    'domain_count' => auth()->user()->domains()->count(),
+    'monthly_scans' => auth()->user()->scans()->whereMonth('created_at', now()->month)->count(),
+    'reports_count' => auth()->user()->reports()->count(),
+];
+
+// Domain Detail Data
+$domainData = [
+    'total_score' => $domain->latest_scan->total_score ?? null,
+    'ssl_grade' => $domain->latest_scan->modules()->where('module', 'ssl_tls')->first()->raw['grade'] ?? 'Unknown',
+    'headers_configured' => $domain->latest_scan->modules()->where('module', 'security_headers')->first()->score ?? 0,
+    'dnssec_status' => $domain->latest_scan->modules()->where('module', 'dns_email')->first()->raw['dnssec'] ?? false,
+];
+```
+
+### Trial Banner (Conditional Display)
+```
+Displays only when: user.trial_ends_at > now()
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ 🕒 {plan.name} Trial  {days_remaining} days remaining  {domain_count} of {max_domains} domains  [Upgrade Now] [✕] │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Empty States & Error Handling
+
+**Every page handles missing data appropriately:**
+
+```php
+// Dashboard Empty States
+if ($domainCount === 0) {
+    return view('dashboard')->with('emptyState', [
+        'title' => 'No domains yet',
+        'message' => 'Add your first domain to start monitoring',
+        'action' => 'Add Domain',
+        'route' => route('domains.create')
+    ]);
+}
+
+// Activity Empty State
+if ($scanCount === 0) {
+    return view('activity.index')->with('emptyState', [
+        'title' => 'No scan activity yet',
+        'message' => 'Run your first scan to see results here',
+        'action' => 'Scan Now',
+        'route' => route('scans.create')
+    ]);
+}
+
+// Reports Empty State
+if ($reportCount === 0) {
+    return view('reports.index')->with('emptyState', [
+        'title' => 'No reports yet',
+        'message' => 'Generate your first security report to get started',
+        'action' => 'Generate Report',
+        'route' => route('reports.create')
+    ]);
+}
+```
+
+### Domains Page Layout
+
+#### Header Section
+- Page title and description
+- "Add Domain" and "Scan Now" buttons (top right)
+- Tab filters: "Your Domains" / "All Clients" (note: no clients in MVP)
+
+#### Domains Table
+```
+┌──────────────────────────────────────────────────────────────────┐
+│ CLIENT NAME | DOMAIN NAME           | LAST SCAN DATE | SCORE | ACTIONS │
+├──────────────────────────────────────────────────────────────────┤
+│ Richard     | https://hackerscope.ai| Aug 12, 02:33PM|   85  | 👁 🔍 🗑  │
+└──────────────────────────────────────────────────────────────────┘
+```
+- Client name (note: remove for MVP)
+- Full domain URL with favicon
+- Last scan timestamp
+- Score with color coding
+- Action buttons: View, Scan, Delete
+
+### Activity Page Layout
+
+#### Filters Section
+- "All Domains" dropdown
+- Date range picker (Last 30 days)
+- "Generate Report" button (top right)
+
+#### Activity Table
+- Date & Time column
+- Domain name with client info
+- Scan type badge (Full Scan)
+- Security score with color
+- Actions (View, Generate)
+
+### Reports Page Layout
+- Empty state: "No reports yet"
+- "Generate Your First Report" CTA button
+- Future: Table with report name, date, type, status, actions
+
+### Domain Detail Page Layout
+
+#### Header Section
+- Domain URL as title
+- "New Scan" button
+- Breadcrumb navigation
+
+#### Score Overview Cards
+- Overall Score (large number with grade)
+- SSL/TLS Grade (A+, with days left)
+- Scan Coverage indicator
+
+#### Security Modules Grid
+
+##### Security Headers Module
+- 5/5 configured indicator
+- List of headers with status badges:
+  - HSTS ✓ Set
+  - CSP ✓ Set  
+  - X-Frame-Options ✓ Set
+  - X-Content-Type ✓ Set
+  - Referrer-Policy ✓ Set
+
+##### DNS & Network Module
+- DNSSEC Enabled badge
+- Email Security indicators (SPF, DMARC badges)
+- Open Ports: "0 detected"
+
+#### Recommended Actions Section
+- List of prioritized security improvements
+- How-to guidance for each recommendation
+- Color-coded by severity
+
+### Common UI Patterns
+
+#### Buttons
+- **Primary**: Blue background (#3b82f6), white text
+- **Secondary**: Dark border, white text
+- **Danger**: Red background (#ef4444), white text
+- **Success**: Green background (#22c55e), white text
+
+#### Form Fields
+- Dark background with light border
+- Focus state with blue outline
+- Error states with red border
+
+#### Status Badges
+- **Success**: Green background, white text
+- **Warning**: Orange background, white text
+- **Error**: Red background, white text
+- **Info**: Blue background, white text
+
+#### Loading States
+- Skeleton loading for data tables
+- Spinner for action buttons
+- Progress bars for scan progress
+
+This design system ensures consistency across all pages while maintaining the professional security tool aesthetic.
+
+#### Trial Experience
+- 14-day free trial
+- No credit card required
+- Full feature access
+- Clear upgrade path
+- Trial countdown banner
+
+#### Design Principles
+- Dark theme (#0a0a0b background)
+- Mobile-responsive
+- Accessibility (WCAG AA)
+- Fast page loads (<500ms)
+- Clear visual hierarchy
+
+## Pricing Strategy
 
 ### Solo Plan - $27/month
-- **Domain Limit**: 10 domains (significantly higher than competitors)
-- **Scan Frequency**: Unlimited scans with auto-scaling processing
-- **Report Generation**: Unlimited professional PDF reports
-- **History Retention**: Complete scan history with unlimited storage
-- **Trial Period**: 14 days free trial with full feature access
-- **Support**: Standard support with comprehensive documentation
-- **Infrastructure**: Auto-scaling with cost optimization included
+**Includes:**
+- 10 domain slots
+- Unlimited scans
+- Professional PDF reports
+- Full scan history
+- Email support
 
-### Trial Experience
-- **14-day Free Trial**: Complete feature access without limitations
-- **No Credit Card Required**: Completely frictionless signup process
-- **Trial Status Banner**: Clear trial status with days remaining countdown
-- **Strategic Upgrade Prompts**: Well-timed upgrade messaging without being intrusive
-- **Full Domain Access**: Trial includes complete 10 domain limit access
-- **Professional Reports**: PDF generation available during trial period
+**Why This Price:**
+- Above basic tools ($5-15) - signals quality
+- Below enterprise ($50+) - remains accessible
+- Sweet spot for freelancers
+- Sustainable unit economics
+
+### Trial Strategy
+- **14 days**: Optimal for technical evaluation
+- **No restrictions**: Full features during trial
+- **No card required**: Reduces friction
+- **Clear value**: Immediate scan results
 
 ## Business Model
 
-### Subscription Structure
-- **Monthly Subscription**: $27/month recurring billing with Stripe integration
-- **Trial-to-Paid Conversion**: Seamless upgrade flow with saved payment methods
-- **Domain-Based Value**: Clear value scaling with domain usage patterns
-- **Professional Features**: PDF reports and unlimited scans included at base price
-- **Auto-scaling Infrastructure**: Cost-optimized backend improves profit margins
+### Revenue Model
+- **SaaS subscription**: Monthly recurring revenue
+- **Single tier**: Simplicity over complexity
+- **Direct billing**: Stripe integration (no Cashier)
+- **Auto-renewal**: Reduced churn
 
-### Competitive Positioning
-- **86% Cost Savings**: $27 vs $199/month enterprise security solutions
-- **Freelancer-Focused**: Designed specifically for developer workflow and client needs
-- **Comprehensive Coverage**: Multiple security vectors in single integrated platform
-- **Professional Output**: Client-ready reports without additional cost or complexity
-- **Transparent Pricing**: No hidden fees, feature upsells, or usage-based charges
+### Unit Economics (per customer)
+- **Revenue**: $27/month
+- **Infrastructure**: ~$3/month (with hibernation)
+- **Payment processing**: ~$1.50/month
+- **Gross margin**: ~80%
 
-## Technical Advantages
+### Growth Strategy
+1. **Land**: Acquire developers with free trial
+2. **Activate**: First scan within 24 hours
+3. **Convert**: Trial to paid at day 10-12
+4. **Retain**: Consistent value delivery
 
-### Auto-scaling Infrastructure
-- **Dynamic Resource Allocation**: Queue workers scale automatically based on scan demand
-- **Cost Optimization**: Infrastructure hibernates during low usage periods
-- **Global Performance**: Edge caching and CDN integration for worldwide speed
-- **Zero Configuration**: No manual infrastructure management or scaling decisions
-- **Enterprise Security**: Built-in WAF, DDoS protection, and automatic SSL management
-
-### Advanced Security Scanning
-- **SSRF Protection**: Comprehensive protection against internal network scanning
-- **Weighted Scoring Algorithm**: Scientifically balanced scoring across security vectors
-- **Email Security Flexibility**: Support for domains with and without email services
-- **Historical Trend Analysis**: Long-term security posture tracking and improvement measurement
-- **Professional Reporting**: Automated generation of client-ready security assessments
-
-## Success Metrics & Market Validation
-
-### Conversion Opportunity  
-**Developer tools achieve highest SaaS conversion rates (15-25%) vs security tools (8-15%)**
-- Technical users can "quickly assess value" during trials
-- Streamlined onboarding with <5 minutes time-to-first-value
-- 14-day optimal trial length balancing evaluation time vs urgency
-
-### Business Targets (Research-Validated)
-- **Target Market Size**: $464M-1.25B annual opportunity
-- **Customer Acquisition Goal**: 300 customers = $8,100 MRR in Year 1  
-- **Trial Conversion Target**: 20-25% (above security tool average)
-- **Monthly Churn Target**: <5% through clear value demonstration
-- **Domain Utilization Target**: 70-80% indicating product-market fit
-
-### Market Timing Advantages
-- **Website security market growing 10.5% annually** reaching $14.3B by 2033
-- **SMB cybersecurity spending increased 22%** with 80% planning further increases
-- **61% of SMBs targeted by attacks** yet only 25% use security monitoring
-- **Rising attack awareness** shifting security from nice-to-have to essential
-
-## Marketing & Go-to-Market Strategy
-
-### Primary Messaging Framework
-**"Security monitoring designed for freelancers managing multiple client sites"**
-
-Lead with economics, not features:
-- "Finally, security monitoring that doesn't cost more than your hosting bill"
-- "10 domains for $27/month vs competitors at $250/month"  
-- "97% cost savings with professional PDF reports included"
-
-### Target Acquisition Sequence
-1. **Phase 1**: 127,000 freelance developers (price-sensitive, technically capable)
-2. **Phase 2**: 200,000 small agencies (larger contract values, growth potential)
-3. **Phase 3**: Security consultants (premium pricing opportunity)
-
-### Key Differentiators to Emphasize
-1. **Multi-domain economics** as primary value proposition
-2. **Security headers analysis** as technical differentiator (missing from competitors)
-3. **Professional PDF reporting** solving client communication pain point
-4. **Developer-friendly** with API access and workflow integrations
-
-### Competitive Positioning
-- **Not "another security tool"** but **"category creator for freelancer security"**
-- **Economics-first messaging**: Lead with cost comparison tables
-- **Agency-focused features**: White-labeled reports, bulk operations, client dashboards
-- **Technical credibility**: Comprehensive scanning, SSRF protection, modern infrastructure
-
-## Competitive Analysis
-
-### Enterprise Solutions (Qualys, Rapid7)
-- **Price**: $199-500/month vs our $27/month
-- **Complexity**: Enterprise features vs simplified developer focus
-- **Setup Time**: Weeks vs minutes
-- **Reporting**: Generic vs developer/agency-focused
-
-### Developer Tools (GTMetrix, Pingdom)
-- **Scope**: Performance only vs comprehensive security
-- **Reporting**: Basic vs professional client-ready reports
-- **Domain Limits**: 1-3 domains vs 10 domains
-- **Price**: Similar cost with less comprehensive features
-
-### DIY Solutions
-- **Time Investment**: Hours of manual checking vs automated comprehensive scans
-- **Expertise Required**: Deep security knowledge vs accessible interface
-- **Client Presentation**: No professional reporting vs branded PDF reports
-- **Consistency**: Manual errors vs automated, repeatable analysis
-
-## Deployment & Infrastructure
-
-### Laravel Cloud Advantages
-- **Serverless Deployment**: Zero server management with automatic scaling
-- **Global AWS Infrastructure**: Multi-region deployment with edge caching
-- **Auto-scaling Database**: Serverless PostgreSQL that scales with demand and hibernates for cost savings
-- **Enterprise Security**: Built-in DDoS protection, WAF, and automatic SSL certificate management
-- **Cost Optimization**: Hibernation during low usage periods significantly reduces infrastructure costs
-- **Zero DevOps**: Complete elimination of infrastructure management overhead
-
-### Scalability Features
-- **Queue Auto-scaling**: Worker processes scale automatically based on scan demand
-- **Database Hibernation**: Costs approach zero during idle periods
-- **Global CDN**: CloudFront integration ensures fast worldwide performance
-- **Automatic SSL**: Certificate provisioning and renewal completely automated
-- **Preview Environments**: Testing infrastructure changes without production impact
-
-## Future Development Roadmap
-
-### Phase 1: Core Growth Features (Q1)
-- **Email Notifications**: Scan completion and critical issue alerts
-- **Enhanced Monitoring**: Laravel Cloud metrics integration and cost tracking
-- **API Access**: REST API with authentication for integrations
-
-### Phase 2: Advanced Features (Q2)
-- **Scheduled Scans**: Automated scanning with customizable frequency
-- **Export Features**: CSV, Excel, JSON export capabilities
-- **Enhanced Reporting**: Additional report formats and customization
-
-### Phase 3: Enterprise Features (Q3-Q4)
-- **White-label Support**: Custom branding and domain hosting
-- **Team Management**: Multi-user access with role-based permissions
-- **Advanced Scanners**: Performance and accessibility analysis modules
-
-## Market Opportunity
+## Market Analysis
 
 ### Total Addressable Market
-- **Freelance Developers**: 50,000+ potential users managing client websites
-- **Small Agencies**: 15,000+ agencies with 2-10 employees needing security monitoring
-- **Security Consultants**: 5,000+ consultants requiring professional reporting tools
-- **Website Owners**: 100,000+ small business websites needing security monitoring
+- **Freelance developers**: 127,000 × $324/year = $41M
+- **Small businesses**: 50,000 × $324/year = $16M
+- **Total TAM**: $57M annually
 
-### Market Validation
-- **Price Sensitivity Research**: $27/month hits sweet spot for small business budgets
-- **Feature Demand**: Security scanning with professional reporting addresses clear market gap
-- **Competitive Analysis**: Significant price and complexity advantages over existing solutions
-- **Customer Development**: Direct feedback from target market validates core value proposition
+### Serviceable Addressable Market
+- **Target**: 1% market share in year 1
+- **SAM**: $570,000 annual revenue
+- **Goal**: 1,760 customers @ $27/month
+
+### Competition Landscape
+
+#### Direct Competitors
+| Service | Price/Domain | 10 Domains | Limitations |
+|---------|-------------|------------|-------------|
+| SiteLock | $24.99 | $250/month | No headers analysis |
+| Sucuri | $28.00 | $280/month | WordPress focus |
+| MalCare | $24.92 | $249/month | Basic SSL only |
+| **Achilleus** | **$2.70** | **$27/month** | **None** |
+
+#### Why We Win
+- **Price**: 90% cheaper for multi-domain users
+- **Simplicity**: One scan type, clear scoring
+- **Speed**: 15-second scans vs 2-5 minutes
+- **Focus**: Security only, no feature bloat
+
+## Product Roadmap
+
+### Current MVP (Launched)
+✅ Three-module security scanning
+✅ 10 domain management
+✅ Professional PDF reports
+✅ Stripe billing integration
+✅ 14-day free trial
+
+### Phase 2 (Months 2-3)
+- Email notifications for critical issues
+- Scan scheduling (daily/weekly/monthly)
+- API access for integrations
+- Enhanced PDF customization
+
+### Phase 3 (Months 4-6)
+- Additional security modules
+- Bulk domain import
+- CSV/JSON exports
+- Webhook notifications
+
+### Future Vision (Year 2)
+- Team accounts (multi-user)
+- White-label options
+- Advanced analytics
+- Compliance reporting
+
+## Success Metrics
+
+### Key Performance Indicators
+- **Trial conversion rate**: Target 25%
+- **Monthly churn**: Target <5%
+- **Customer acquisition cost**: <$50
+- **Lifetime value**: >$500
+- **Monthly recurring revenue**: $8,100 (300 customers)
+
+### Product Metrics
+- **Scan completion rate**: >95%
+- **Time to first scan**: <5 minutes
+- **Support tickets**: <5% of users/month
+- **Uptime**: 99.9%
+
+### User Satisfaction
+- **NPS score**: Target >50
+- **Feature requests**: Track and prioritize
+- **Churn reasons**: Monthly analysis
+- **Review ratings**: 4.5+ stars
+
+## Risk Analysis
+
+### Technical Risks
+- **Scanner accuracy**: Continuous testing and validation
+- **False positives**: Conservative scoring approach
+- **Scaling issues**: Laravel Cloud auto-scaling
+- **Security breaches**: SSRF protection, input validation
+
+### Business Risks
+- **Low conversion**: Optimize onboarding flow
+- **High churn**: Focus on consistent value
+- **Competition**: Maintain price advantage
+- **Support burden**: Comprehensive documentation
+
+### Mitigation Strategies
+- Regular security audits
+- Automated testing pipeline
+- Customer feedback loops
+- Proactive monitoring
+
+## Go-to-Market Strategy
+
+### Positioning
+**"The security monitoring tool that doesn't cost more than your hosting"**
+
+### Launch Channels
+1. **Product Hunt**: Technical audience
+2. **Developer communities**: Reddit, HN, Dev.to
+3. **Content marketing**: Security best practices
+4. **Comparison pages**: vs competitors
+
+### Messaging Framework
+- **Problem**: Security tools charge per-site, becoming unaffordable
+- **Solution**: Flat-rate pricing for 10 domains
+- **Benefit**: Enterprise security at freelancer prices
+- **Proof**: Live demo, free trial
+
+### Customer Acquisition
+1. **Organic search**: "affordable security monitoring"
+2. **Comparison content**: Alternative to [competitor]
+3. **Developer tools directories**: Free listings
+4. **Word of mouth**: Referral incentives
+
+## Business Rules & Constraints
+
+### Domain Limits
+```php
+const MAX_DOMAINS = 10;
+const MAX_SCANS_PER_MINUTE = 10; // Rate limiting
+```
+
+### Trial Configuration
+```php
+const TRIAL_DAYS = 14;
+const TRIAL_FEATURES = 'full'; // No restrictions during trial
+```
+
+### Subscription Details
+```php
+const PLAN_NAME = 'Solo Plan';
+const PLAN_PRICE = 27; // USD per month
+const SCAN_LIMIT = 'unlimited';
+```
+
+### Domain Validation Rules
+- Must be HTTPS URL (HTTP rejected)
+- Private IPs blocked (192.168.x, 10.x, etc.)
+- Localhost blocked
+- URL paths ignored (normalized to domain)
+- Duplicate domains prevented per user
+
+## What This Project Does NOT Include
+
+❌ **Client Management** - No client portals or multi-tenancy
+❌ **Automation** - No automated/scheduled scans in MVP
+❌ **Multiple Scan Types** - Single comprehensive scan only
+❌ **Uptime Monitoring** - Security focus only
+❌ **White-labeling** - Achilleus branding only
+❌ **Team Features** - Single user per account
+❌ **API Access** - Web interface only in MVP
+❌ **Laravel Cashier** - Direct Stripe API integration
+❌ **Horizon** - Laravel Cloud handles queues
+
+## Conclusion
+
+Achilleus addresses a clear market need: affordable security monitoring for developers managing multiple websites. By focusing on essential security checks, maintaining simplicity, and offering revolutionary pricing, Achilleus can capture significant market share in the underserved freelancer and small business segments.
+
+The product is designed to be:
+- **Affordable**: $27/month for 10 domains
+- **Reliable**: 8/10 security coverage with low false positives
+- **Fast**: 15-second scans
+- **Simple**: One scan type, clear scoring
+- **Professional**: PDF reports for documentation
+
+This combination creates a compelling value proposition that competitors cannot match without destroying their revenue models.

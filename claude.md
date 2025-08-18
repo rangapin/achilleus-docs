@@ -1,417 +1,1269 @@
-# Achilleus Claude Documentation
+# CLAUDE.md
 
-## Project Context
-Achilleus is a production-ready security monitoring SaaS built with Laravel 12 and React 19. It provides comprehensive website security scanning with professional PDF reporting at $27/month for up to 10 domains, targeting freelance developers and small agencies.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Quick Command Reference
+## Project Overview
+
+**Achilleus** - Security monitoring SaaS for developers managing multiple websites
+**Target**: Freelancers and small businesses needing affordable security monitoring
+**Price**: $27/month for 10 domains with unlimited scans
+**Stack**: Laravel 12 + React 19 + Shadcn/ui + Inertia.js + Playwright MCP
+
+## Documentation Structure
+
+Complete project documentation is available in `/docs/`:
+- `/docs/technical.md` - System architecture, database schema, scanner implementation
+- `/docs/product.md` - Product specifications, UI mockups, business rules  
+- `/docs/execution.md` - Development phases, testing strategy, deployment plan
+
+## Achilleus Development Shortcuts
+
+### Development Workflow Commands
+
 ```bash
-# Use these shortcuts for task-based development:
-achilleus plan 1.1    # Plan subtask 1.1 (see execution.md)
-achilleus test 2.3    # Write tests for subtask 2.3 (see execution.md)
-achilleus code 7.2    # Build subtask 7.2 (see execution.md)
-achilleus verify 3.1  # Verify subtask 3.1 tests pass (see execution.md)
-
-# Common Laravel commands:
-php artisan serve     # Local development server
-npm run dev          # Vite development server  
-php artisan pest     # Run test suite
-php artisan pint     # Format PHP code
-```
-
-## Development Best Practices
-
-### Laravel 12 Best Practices
-- **Use Service Classes**: Keep controllers thin, business logic in services
-- **Type Hints Everywhere**: Leverage PHP 8.3+ features for better IDE support
-- **Eloquent Relationships**: Use proper relationships, avoid N+1 queries with eager loading
-- **Form Requests**: Validate input using dedicated Form Request classes
-- **Resource Classes**: Transform model data consistently with API Resources
-- **Jobs & Queues**: Use auto-scaling queues for all time-consuming operations
-
-### Code Organization
-```php
-// Good: Service class with dependency injection
-class SecurityScanService {
-    public function __construct(
-        private SecurityHeadersScanner $headersScanner,
-        private SslTlsScanner $sslScanner,
-        private DnsEmailScanner $dnsScanner,
-        private SecurityScorer $scorer
-    ) {}
+# Achilleus Plan 1.1 - Plan your task
+achilleus-plan() {
+    echo "📋 PLANNING PHASE"
+    echo "1. Break down task into testable units"
+    echo "2. Identify security implications"
+    echo "3. Plan test cases (unit + integration + E2E)"
+    echo "4. Consider SSRF/validation requirements"
 }
 
-// Good: Type-hinted controller with service injection
-class DomainScanController extends Controller {
-    public function store(ScanRequest $request, Domain $domain, SecurityScanService $scanner) {
-        $this->authorize('scan', $domain);
-        return $scanner->initiateScan($domain, $request->validated());
-    }
+# Achilleus Test 1.1 - Write tests first (TDD)
+achilleus-test() {
+    echo "🧪 TESTING PHASE - Write tests FIRST"
+    echo "Unit Tests: php artisan pest tests/Unit/"
+    echo "Feature Tests: php artisan pest tests/Feature/"
+    echo "E2E Tests: npx playwright test"
+    echo "Security Tests: Focus on input validation & SSRF"
+}
+
+# Achilleus Code 1.1 - Implement to pass tests
+achilleus-code() {
+    echo "💻 CODING PHASE - Make tests pass"
+    echo "1. Follow Laravel conventions"
+    echo "2. Use Shadcn/ui components"
+    echo "3. Implement security-first patterns"
+    echo "4. Add proper error handling"
+}
+
+# Achilleus Verify 1.1 - Test and validate
+achilleus-verify() {
+    echo "✅ VERIFICATION PHASE"
+    echo "Running all tests..."
+    php artisan pest --parallel
+    npm run type-check
+    npx playwright test
+    php artisan pint --test
+    echo "Manual verification commands:"
+    echo "- php artisan tinker (test functions)"
+    echo "- curl tests for APIs"
+    echo "- Browser testing for UI"
 }
 ```
 
-### Database Best Practices
-- **UUID Primary Keys**: Use UUIDs for better distributed scaling
-- **JSONB for Scan Results**: Store scanner findings as structured JSONB
-- **Proper Indexing**: Index frequently queried columns (user_id, created_at)
-- **Relationships**: Define relationships properly for eager loading
-- **Migrations**: Keep migrations small and reversible
+Add these to your shell profile for quick access.
 
-### Security Best Practices
-- **Input Validation**: Validate all user input with Form Requests
-- **Authorization**: Use policies for all domain/scan access checks
-- **SSRF Protection**: Validate URLs before making HTTP requests
-- **Rate Limiting**: Implement scan rate limits (10/minute per user)
-- **Secure Defaults**: Use secure HTTP client configurations
+## Security-First Development (Critical for SaaS)
 
-### Testing Best Practices
+### 1. Input Validation & Sanitization
 ```php
-// Good: Test with proper setup and assertions
-test('user can scan owned domain', function () {
-    $user = User::factory()->create();
-    $domain = Domain::factory()->for($user)->create();
-    
-    $this->actingAs($user)
-        ->post("/domains/{$domain->id}/scan")
-        ->assertRedirect()
-        ->assertSessionHas('success');
-        
-    expect(Scan::where('domain_id', $domain->id))->toHaveCount(1);
-});
-
-// Good: Mock external services in tests
-test('ssl scanner handles connection failure gracefully', function () {
-    Http::fake(['*' => Http::response('', 500)]);
-    
-    $scanner = new SslTlsScanner();
-    $result = $scanner->scan('https://example.com');
-    
-    expect($result->status)->toBe('fail');
-});
-```
-
-### Frontend Best Practices (React 19 + Inertia)
-- **Component Composition**: Break UI into reusable components
-- **TypeScript**: Use strict TypeScript for all components
-- **shadcn/ui**: Use shadcn/ui components for consistency
-- **Inertia Patterns**: Leverage Inertia's partial reloads and form handling
-- **Error Boundaries**: Implement proper error handling
-
-### Performance Best Practices
-- **Query Optimization**: Use eager loading, avoid N+1 queries
-- **Caching Strategy**: Cache dashboard metrics, scan results appropriately
-- **Auto-scaling Queues**: Let Laravel Cloud handle queue scaling
-- **Database Hibernation**: Leverage serverless PostgreSQL cost optimization
-- **Edge Caching**: Use CloudFront for static assets
-
-### API Design Best Practices
-```php
-// Good: Consistent API resource structure
-class ScanResource extends JsonResource {
-    public function toArray($request): array {
+// ALWAYS use Form Requests for validation
+class StoreDomainRequest extends FormRequest {
+    public function rules(): array {
         return [
-            'id' => $this->id,
-            'status' => $this->status,
-            'total_score' => $this->total_score,
-            'grade' => $this->grade,
-            'started_at' => $this->started_at,
-            'completed_at' => $this->completed_at,
-            'modules' => ScanModuleResource::collection($this->whenLoaded('modules')),
+            'url' => [
+                'required',
+                'url',
+                'starts_with:https://', // HTTPS only
+                new PublicUrl(),        // No private IPs
+                new UniqueDomainForUser(auth()->id())
+            ]
+        ];
+    }
+    
+    // Custom validation messages
+    public function messages(): array {
+        return [
+            'url.starts_with' => 'Only HTTPS URLs are allowed for security.',
         ];
     }
 }
 ```
 
-## Technology Architecture
+### 2. SSRF Protection (Critical)
+```php
+// ALWAYS validate URLs before external requests
+NetworkGuard::assertPublicHttpUrl($url);
 
-### Backend Stack
-- **Laravel 12**: Core framework with React starter kit
-- **PostgreSQL 15**: Auto-scaling serverless database with JSONB for scan results
-- **Laravel Breeze**: Authentication backend only (no UI)
-- **Redis**: Auto-scaling cache and session storage
-- **Direct Stripe API**: Payment processing (no Cashier)
+// Blocked patterns:
+// - localhost (127.0.0.1, ::1)
+// - Private networks (10.x, 192.168.x, 172.16-31.x)
+// - Cloud metadata (169.254.169.254)
+// - Internal services (0.0.0.0)
 
-### Frontend Stack
-- **React 19**: From Laravel 12 starter kit
-- **Inertia.js 2**: SPA with server-side routing
-- **TypeScript**: Type-safe development
-- **Tailwind CSS 4**: Utility-first styling
-- **shadcn/ui**: Professional React components
-- **Vite**: Build tool and dev server
+// ENHANCED SCANNER PATTERN - Use AbstractScanner base class:
+class SecurityHeadersScanner extends AbstractScanner {
+    protected int $timeout = 20;           // Scanner-specific timeout
+    protected int $retryAttempts = 2;      // Retry logic built-in
+    
+    public function name(): string {
+        return 'security_headers';
+    }
+    
+    public function getWeight(): int {
+        return 30; // 30% of total score
+    }
+    
+    protected function getRateLimitPerMinute(): int {
+        return 8; // Polite to target servers
+    }
+    
+    // Base class handles SSRF, retries, rate limiting, error handling
+    protected function performScan(string $url, array $context = []): ModuleResult {
+        // Your specific scanner logic here
+        // NetworkGuard::assertPublicHttpUrl($url) called automatically
+        // Timeout and retry logic handled by base class
+    }
+}
+```
 
-### Infrastructure (Laravel Cloud)
-- **Hosting**: Laravel Cloud serverless platform
-- **AWS Region**: US East (Ohio) us-east-2
-- **Database**: Auto-scaling Serverless PostgreSQL
-- **Cache**: Auto-scaling Redis
-- **Storage**: S3 for PDF reports
-- **CDN**: CloudFront edge caching
-- **Queue Processing**: Auto-scaling Queue clusters (developer preview)
-- **Auto-scaling**: 1-10 replicas with hibernation for cost optimization
+### 3. Authentication & Authorization
+```php
+// ALWAYS authorize domain access
+class DomainController extends Controller {
+    public function show(Domain $domain) {
+        $this->authorize('view', $domain); // Check ownership
+        return inertia('Domains/Show', compact('domain'));
+    }
+}
 
-## Core Features (Implemented)
+// Domain Policy
+class DomainPolicy {
+    public function view(User $user, Domain $domain): bool {
+        return $user->id === $domain->user_id;
+    }
+}
+```
 
-### Security Scanning System
-- **Three Scanners**: SSL/TLS (40%), Security Headers (30%), DNS/Email (30%)
-- **Single Scan Type**: One comprehensive security analysis
-- **Auto-scaling Queue Processing**: Laravel Cloud Queue clusters with automatic worker scaling
-- **SSRF Protection**: NetworkGuard prevents internal network scanning
-- **Smart Caching**: Redis with appropriate TTLs
+### 4. Rate Limiting
+```php
+// Apply to all scan endpoints
+Route::middleware(['throttle:scans'])->group(function () {
+    Route::post('/domains/{domain}/scan', [DomainScanController::class, 'store']);
+});
 
-### User Experience
-- **Dark Theme UI**: #0a0a0b background throughout
-- **4-Card Dashboard**: Score, Domains, Last Scan, Critical Issues
-- **Collapsible Sidebar**: Dashboard → Domains → Activity → Reports
-- **Trial System**: 14-day free trial with banner
-- **Mobile-First**: Responsive design for all devices
+// In RouteServiceProvider
+RateLimiter::for('scans', function (Request $request) {
+    return Limit::perMinute(10)->by($request->user()->id);
+});
+```
 
-### Business Features
-- **Stripe Billing**: $27/month subscription
-- **Domain Management**: CRUD with 10 domain limit
-- **PDF Reports**: Professional branded reports
-- **Activity History**: Complete scan tracking
-- **Email Verification**: Required for activation
+### 5. Secure Data Handling
+```php
+// NEVER log sensitive data
+Log::info('Scan started', [
+    'domain_id' => $domain->id,
+    'user_id' => $user->id,
+    // NEVER log: URLs, API keys, personal data
+]);
 
-## Implementation Details
+// Use encrypted casting for sensitive fields
+class User extends Model {
+    protected $casts = [
+        'stripe_customer_id' => 'encrypted', // If storing sensitive IDs
+    ];
+}
+```
 
-### Authentication Flow
+### 6. Enhanced Scanner Implementation (Critical)
+
+#### Scanner Architecture
+```php
+// ALWAYS extend AbstractScanner for consistency
+abstract class AbstractScanner implements Scanner {
+    protected int $timeout = 30;           // Default timeout
+    protected int $retryAttempts = 3;      // Retry with exponential backoff
+    protected int $retryDelay = 1;         // Base delay in seconds
+    
+    // Template method - handles all common concerns
+    public function scan(string $url, array $context = []): ModuleResult {
+        // ✅ Automatic rate limiting check
+        // ✅ SSRF protection via NetworkGuard
+        // ✅ Retry logic with exponential backoff
+        // ✅ Consistent error handling and logging
+        // ✅ Execution time tracking
+        
+        return $this->performScan($url, $context);
+    }
+    
+    // Implement this method in concrete scanners
+    abstract protected function performScan(string $url, array $context = []): ModuleResult;
+}
+```
+
+#### Scanner Error Handling Hierarchy
+```php
+// Use specific exceptions for different failure types
+namespace App\Exceptions;
+
+class ScannerException extends Exception {}      // Base scanner exception
+class NetworkException extends ScannerException {} // Network/connectivity issues
+class TimeoutException extends ScannerException {} // Request timeouts
+class RateLimitException extends ScannerException {} // Rate limit hit
+class ValidationException extends ScannerException {} // Data validation
+class SSRFException extends ValidationException {}  // SSRF attempt blocked
+
+// Handle each exception type appropriately
+try {
+    $result = $scanner->scan($url);
+} catch (SSRFException $e) {
+    // Log security incident, return error result
+    Log::warning('SSRF blocked', ['url' => $url]);
+    return ModuleResult::error($scanner->name(), 'Invalid URL');
+} catch (TimeoutException $e) {
+    // Different handling for timeouts
+    return ModuleResult::timeout($scanner->name(), $e->getExecutionTime());
+}
+```
+
+#### Rate Limiting Best Practices
+```php
+class SslTlsScanner extends AbstractScanner {
+    protected function getRateLimitPerMinute(): int {
+        return 5; // Conservative for SSL connections
+    }
+}
+
+class SecurityHeadersScanner extends AbstractScanner {
+    protected function getRateLimitPerMinute(): int {
+        return 8; // Moderate for HTTP requests
+    }
+}
+
+class DnsEmailScanner extends AbstractScanner {
+    protected function getRateLimitPerMinute(): int {
+        return 15; // Higher for DNS queries (lighter load)
+    }
+}
+
+// Rate limiting implementation respects target servers
+private function checkRateLimit(string $url): bool {
+    $host = parse_url($url, PHP_URL_HOST);
+    $key = "scanner_rate_limit:{$this->name()}:{$host}";
+    
+    $requests = Cache::get($key, 0);
+    return $requests < $this->getRateLimitPerMinute();
+}
+```
+
+#### Enhanced SSL Chain Validation
+```php
+class SslTlsScanner extends AbstractScanner {
+    protected function performScan(string $url, array $context = []): ModuleResult {
+        // Enhanced SSL context with comprehensive security
+        $context = stream_context_create([
+            'ssl' => [
+                'capture_peer_cert' => true,
+                'capture_peer_cert_chain' => true,  // Full chain analysis
+                'verify_peer' => true,
+                'verify_peer_name' => true,
+                'allow_self_signed' => false,
+                'disable_compression' => true,      // Prevent CRIME attacks
+                'crypto_method' => STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT | STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT
+            ]
+        ]);
+        
+        // Comprehensive certificate analysis
+        $analysis = $this->performEnhancedAnalysis($cert, $chain, $meta, $host);
+        
+        return new ModuleResult(
+            module: $this->name(),
+            score: $analysis['score'],
+            status: $this->determineStatus($analysis['score']),
+            raw: $analysis['details']
+        );
+    }
+    
+    private function performEnhancedAnalysis($cert, $chain, $meta, $host): array {
+        // ✅ Expiration checking with tiered warnings
+        // ✅ Hostname verification (CN + SAN)
+        // ✅ Protocol version analysis (TLS 1.2+)
+        // ✅ Cipher strength evaluation
+        // ✅ Perfect Forward Secrecy check
+        // ✅ Key size and type validation
+        // ✅ Certificate chain validation
+        // ✅ Signature algorithm strength
+        // ✅ Wildcard certificate handling
+    }
+}
+```
+
+#### Security Headers Deep Analysis
+```php
+class SecurityHeadersScanner extends AbstractScanner {
+    protected function performScan(string $url, array $context = []): ModuleResult {
+        // Secure HTTP client configuration
+        $response = Http::timeout($this->timeout)
+            ->withUserAgent('Achilleus Security Scanner/1.0')
+            ->withOptions([
+                'verify' => true,                    // Verify SSL certificates
+                'allow_redirects' => [
+                    'max' => 3,                      // Limit redirects
+                    'strict' => true,
+                    'referer' => false,
+                    'protocols' => ['https']         // HTTPS only
+                ]
+            ])
+            ->get($url);
+            
+        // Comprehensive header analysis
+        $analysis = $this->performHeaderAnalysis($headers, $url);
+        // ✅ HSTS analysis (max-age, includeSubDomains, preload)
+        // ✅ CSP analysis (unsafe directives, important directives)
+        // ✅ X-Content-Type-Options verification
+        // ✅ X-Frame-Options checking
+        // ✅ Referrer-Policy evaluation
+        // ✅ Additional security headers (Permissions-Policy, etc.)
+        // ✅ Information disclosure detection (Server headers)
+    }
+}
+```
+
+#### DNS/Email Comprehensive Analysis
+```php
+class DnsEmailScanner extends AbstractScanner {
+    protected function performScan(string $url, array $context = []): ModuleResult {
+        $host = parse_url($url, PHP_URL_HOST);
+        $emailMode = $context['email_mode'] ?? 'expected';
+        
+        // Timeout protection for DNS queries
+        $oldTimeout = ini_get('default_socket_timeout');
+        ini_set('default_socket_timeout', $this->timeout);
+        
+        try {
+            $analysis = $this->performDnsAnalysis($host, $emailMode);
+            // ✅ Basic DNS connectivity (A/AAAA records)
+            // ✅ MX record validation
+            // ✅ SPF policy analysis (permissive detection)
+            // ✅ DKIM validation (common selector fallback)
+            // ✅ DMARC policy evaluation (reject > quarantine > none)
+            // ✅ CAA record checking
+            // ✅ DNSSEC validation (when available)
+            
+        } finally {
+            ini_set('default_socket_timeout', $oldTimeout);
+        }
+    }
+}
+```
+
+## Laravel Best Practices
+
+### 1. Service Layer Pattern
+```php
+// Controllers should be thin
+class DomainController extends Controller {
+    public function store(StoreDomainRequest $request, DomainService $service) {
+        $domain = $service->createDomain($request->validated());
+        return redirect()->route('domains.index');
+    }
+}
+
+// Business logic in services
+class DomainService {
+    public function createDomain(array $data): Domain {
+        $data['url'] = $this->normalizeUrl($data['url']);
+        $domain = Domain::create($data);
+        $this->triggerInitialScan($domain);
+        return $domain;
+    }
+}
+```
+
+### 2. Queue Job Pattern
+```php
+// Jobs should be idempotent and recoverable
+class RunDomainScan implements ShouldQueue {
+    public $tries = 3;
+    public $timeout = 60;
+    public $backoff = [10, 30, 60]; // Exponential backoff
+    
+    public function handle() {
+        // Update status first
+        $this->scan->update(['status' => 'running']);
+        
+        try {
+            // Main logic
+            $this->executeScanners();
+        } catch (Exception $e) {
+            // Clean up on failure
+            $this->scan->update(['status' => 'failed', 'error_message' => $e->getMessage()]);
+            throw $e;
+        }
+    }
+    
+    public function failed(Throwable $exception): void {
+        // Always implement failed handler
+        $this->scan->update(['status' => 'failed']);
+    }
+}
+```
+
+### 3. Model Relationships & Scopes
+```php
+class Domain extends Model {
+    // Define relationships clearly
+    public function user(): BelongsTo {
+        return $this->belongsTo(User::class);
+    }
+    
+    public function scans(): HasMany {
+        return $this->hasMany(Scan::class)->orderBy('created_at', 'desc');
+    }
+    
+    // Useful scopes
+    public function scopeActive(Builder $query): void {
+        $query->where('is_active', true);
+    }
+    
+    // Computed attributes
+    public function getLastScanAttribute(): ?Scan {
+        return $this->scans()->first();
+    }
+}
+```
+
+## UX Enhancement Best Practices (Critical for Conversion)
+
+### 1. Context-Aware Trial Conversion
 ```typescript
-// Custom React components replace Breeze UI
-// Backend uses Breeze authentication logic
-pages/Auth/
-├── Login.tsx        // Custom design, not Breeze
-├── Register.tsx     // Custom design, not Breeze
-└── ForgotPassword.tsx // Custom design, not Breeze
+// ALWAYS track user progress and show relevant conversion messages
+interface TrialProgress {
+  daysRemaining: number
+  domainsAdded: number
+  scansCompleted: number
+  reportsGenerated: number
+  completionPercentage: number
+}
+
+// Smart messaging based on user behavior
+const getTrialMessage = (progress: TrialProgress) => {
+  if (progress.daysRemaining <= 3 && progress.scansCompleted === 0) {
+    return {
+      urgency: 'high',
+      message: 'Trial expires soon - Run your first scan now!',
+      cta: 'Start Free Scan'
+    }
+  }
+  
+  if (progress.completionPercentage >= 80) {
+    return {
+      urgency: 'medium', 
+      message: `You've explored ${progress.completionPercentage}% of Achilleus!`,
+      cta: 'Upgrade Now'
+    }
+  }
+  
+  // Default progression message
+  return {
+    urgency: 'low',
+    message: `${progress.daysRemaining} days left - ${10 - progress.domainsAdded} slots available`,
+    cta: 'Add Domain'
+  }
+}
 ```
 
-### Scanner Implementation
+### 2. Real-Time Scan Progress (Essential for UX)
+```typescript
+// ALWAYS show progress for long-running operations
+export function ScanProgress({ scanId }: { scanId: string }) {
+  const [steps, setSteps] = useState([
+    { name: 'SSL/TLS Analysis', status: 'pending', progress: 0 },
+    { name: 'Security Headers', status: 'pending', progress: 0 },
+    { name: 'DNS/Email Security', status: 'pending', progress: 0 }
+  ])
+
+  useEffect(() => {
+    // WebSocket connection for real-time updates
+    const channel = Echo.channel(`scan.${scanId}`)
+      .listen('ScanStepStarted', (e) => {
+        setSteps(prev => prev.map((step, i) => 
+          i === e.stepIndex 
+            ? { ...step, status: 'running', message: 'Analyzing...' }
+            : step
+        ))
+      })
+      .listen('ScanStepCompleted', (e) => {
+        setSteps(prev => prev.map((step, i) => 
+          i === e.stepIndex 
+            ? { ...step, status: 'completed', progress: 100 }
+            : step
+        ))
+      })
+      
+    return () => channel.leave()
+  }, [scanId])
+
+  // Show visual progress for each step
+  return (
+    <div className="space-y-3">
+      {steps.map((step, index) => (
+        <div key={step.name} className="flex items-center gap-3">
+          <StatusIndicator status={step.status} />
+          <div className="flex-1">
+            <div className="flex justify-between">
+              <span>{step.name}</span>
+              {step.status === 'running' && (
+                <Badge>{step.progress}%</Badge>
+              )}
+            </div>
+            {step.status === 'running' && (
+              <Progress value={step.progress} className="h-1 mt-1" />
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+```
+
+### 3. Smart Empty States (Drive Engagement)
+```typescript
+// NEVER show empty tables/lists without actionable guidance
+export function EmptyState({ type, user }: { type: string, user: User }) {
+  const isTrialing = user.subscription_status === 'trialing'
+  const daysLeft = dayjs(user.trial_ends_at).diff(dayjs(), 'day')
+  
+  const getEmptyConfig = () => {
+    switch (type) {
+      case 'domains':
+        return {
+          title: isTrialing ? 'Add Your First Domain' : 'No Domains Yet',
+          description: isTrialing 
+            ? `${daysLeft} days left in trial - Add a domain to see Achilleus in action!`
+            : 'Start monitoring your website security',
+          primaryAction: 'Add Domain',
+          secondaryAction: isTrialing ? 'Try Demo Domain' : 'View Documentation',
+          tips: [
+            'Add up to 10 domains',
+            'HTTPS domains only',
+            'Unlimited scans included'
+          ]
+        }
+        
+      case 'scans':
+        return {
+          title: 'No Scans Yet',
+          description: 'Run your first security scan to get detailed analysis',
+          primaryAction: 'Start First Scan',
+          secondaryAction: 'Add Another Domain',
+          tips: [
+            'Scans complete in 30 seconds',
+            'Detailed security recommendations', 
+            'Track improvements over time'
+          ]
+        }
+    }
+  }
+
+  // Always show clear next steps with value props
+  return (
+    <div className="text-center py-12">
+      <Icon className="mx-auto mb-4" />
+      <h3 className="text-lg font-semibold mb-2">{config.title}</h3>
+      <p className="text-muted-foreground mb-6">{config.description}</p>
+      
+      <div className="flex gap-3 justify-center mb-6">
+        <Button onClick={handlePrimaryAction}>{config.primaryAction}</Button>
+        <Button variant="outline" onClick={handleSecondaryAction}>
+          {config.secondaryAction}
+        </Button>
+      </div>
+      
+      {/* Always show value props */}
+      <div className="max-w-md mx-auto">
+        <p className="text-sm font-medium mb-2">What you get:</p>
+        <ul className="text-sm text-muted-foreground">
+          {config.tips.map(tip => (
+            <li key={tip} className="flex items-center gap-2">
+              <Check className="h-3 w-3 text-green-500" />
+              {tip}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  )
+}
+```
+
+### 4. Security Score Tooltips (Educational)
+```typescript
+// ALWAYS explain what scores mean - educate users
+export function ScoreTooltip({ score, grade, module, children }) {
+  const getExplanation = () => {
+    const gradeDescriptions = {
+      'A+': 'Excellent security - industry leading',
+      'A': 'Very good security configuration',
+      'B+': 'Good security with minor improvements',
+      'B': 'Acceptable security, room for improvement',
+      'C': 'Significant security gaps need attention',
+      'D': 'Poor security - immediate action required',
+      'F': 'Critical security failures'
+    }
+    
+    const moduleWeights = {
+      'ssl_tls': { weight: '40%', title: 'SSL/TLS Security' },
+      'security_headers': { weight: '30%', title: 'Security Headers' },
+      'dns_email': { weight: '30%', title: 'DNS & Email Security' }
+    }
+    
+    return {
+      grade: gradeDescriptions[grade],
+      module: module ? moduleWeights[module] : null
+    }
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent className="max-w-sm p-4">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className={getGradeColor(grade)}>
+              {grade}
+            </Badge>
+            <span className="font-semibold">{score}/100</span>
+          </div>
+          
+          <p className="text-sm">{explanation.grade}</p>
+          
+          {explanation.module && (
+            <div>
+              <p className="text-sm font-medium">
+                {explanation.module.title} ({explanation.module.weight} of total)
+              </p>
+            </div>
+          )}
+          
+          <p className="text-xs text-muted-foreground pt-2 border-t">
+            Scores based on industry security standards and best practices
+          </p>
+        </div>
+      </TooltipContent>
+    </Tooltip>
+  )
+}
+```
+
+### 5. Prominent Quick Actions (Reduce Friction)
+```typescript
+// ALWAYS provide clear next actions in every context
+export function QuickActions({ context, user, data }) {
+  const getActions = () => {
+    switch (context) {
+      case 'dashboard':
+        return {
+          primary: data?.domains?.length > 0 
+            ? { label: 'Scan All Domains', icon: Search, action: handleScanAll }
+            : { label: 'Add First Domain', icon: Plus, action: handleAddDomain },
+          secondary: [
+            { 
+              label: 'Generate Report', 
+              icon: FileText, 
+              disabled: !data?.hasScans,
+              action: handleGenerateReport 
+            },
+            { 
+              label: 'View Activity', 
+              icon: Clock, 
+              badge: data?.recentScansCount,
+              action: () => router.visit('/activity')
+            }
+          ]
+        }
+        
+      case 'domains':
+        return {
+          primary: { label: 'Add Domain', icon: Plus, action: handleAddDomain },
+          secondary: [
+            { 
+              label: 'Scan All', 
+              icon: Search, 
+              disabled: !data?.domains?.length,
+              action: handleScanAll 
+            },
+            { 
+              label: 'Export List', 
+              icon: Download, 
+              disabled: !data?.domains?.length,
+              action: handleExport 
+            }
+          ]
+        }
+        
+      case 'activity':
+        return {
+          primary: { label: 'New Scan', icon: Search, action: handleNewScan },
+          secondary: [
+            { 
+              label: 'Generate Report', 
+              icon: FileText, 
+              disabled: !data?.scans?.length,
+              action: handleGenerateReport 
+            },
+            { 
+              label: 'Download CSV', 
+              icon: Download, 
+              disabled: !data?.scans?.length,
+              action: handleDownloadCsv 
+            }
+          ]
+        }
+    }
+  }
+
+  const actions = getActions()
+  
+  // Always show primary action prominently
+  return (
+    <div className="flex flex-col sm:flex-row gap-3">
+      <Button 
+        size="default"
+        onClick={actions.primary.action}
+        disabled={actions.primary.loading}
+        className="min-w-[140px]"
+      >
+        <actions.primary.icon className="h-4 w-4 mr-2" />
+        {actions.primary.label}
+      </Button>
+      
+      <div className="flex gap-2">
+        {actions.secondary.map((action, index) => (
+          <Button
+            key={index}
+            variant="outline"
+            onClick={action.action}
+            disabled={action.disabled}
+          >
+            <action.icon className="h-4 w-4 mr-2" />
+            {action.label}
+            {action.badge && (
+              <Badge variant="secondary" className="ml-2">
+                {action.badge}
+              </Badge>
+            )}
+          </Button>
+        ))}
+      </div>
+    </div>
+  )
+}
+```
+
+### 6. User Progress Tracking (Analytics)
+```typescript
+// Track user engagement for conversion optimization
+export function useTrialProgress(user: User) {
+  const [progress, setProgress] = useState<TrialProgress>({
+    daysRemaining: 0,
+    domainsAdded: 0,
+    scansCompleted: 0,
+    reportsGenerated: 0,
+    completionPercentage: 0
+  })
+
+  useEffect(() => {
+    const calculateProgress = () => {
+      const daysRemaining = dayjs(user.trial_ends_at).diff(dayjs(), 'day')
+      const domainsAdded = user.domains?.length || 0
+      const scansCompleted = user.scans?.length || 0
+      const reportsGenerated = user.reports?.length || 0
+      
+      // Weight different actions for completion percentage
+      const weights = {
+        domain: 25,    // Adding first domain (25%)
+        scan: 40,      // Running scans (40%) 
+        report: 25,    // Generating reports (25%)
+        billing: 10    // Viewing billing (10%)
+      }
+      
+      let completionPercentage = 0
+      if (domainsAdded > 0) completionPercentage += weights.domain
+      if (scansCompleted > 0) completionPercentage += weights.scan
+      if (reportsGenerated > 0) completionPercentage += weights.report
+      if (user.viewed_billing) completionPercentage += weights.billing
+      
+      setProgress({
+        daysRemaining,
+        domainsAdded,
+        scansCompleted, 
+        reportsGenerated,
+        completionPercentage
+      })
+    }
+    
+    calculateProgress()
+  }, [user])
+
+  // Track conversion events
+  const trackEvent = (event: string, metadata?: any) => {
+    // Send to analytics service
+    analytics.track(`trial_${event}`, {
+      user_id: user.id,
+      days_remaining: progress.daysRemaining,
+      completion_percentage: progress.completionPercentage,
+      ...metadata
+    })
+  }
+
+  return { progress, trackEvent }
+}
+```
+
+## React + Shadcn/ui Best Practices
+
+### 1. Component Structure
+```typescript
+// Use Shadcn/ui components consistently
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/Components/ui/card"
+import { Badge } from "@/Components/ui/badge"
+import { Button } from "@/Components/ui/button"
+
+interface DashboardCardProps {
+    title: string
+    value: string | number
+    description?: string
+    variant?: "default" | "destructive" | "outline" | "secondary"
+}
+
+export function DashboardCard({ title, value, description, variant = "default" }: DashboardCardProps) {
+    return (
+        <Card>
+            <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{value}</div>
+                {description && (
+                    <CardDescription className="text-xs text-muted-foreground">
+                        {description}
+                    </CardDescription>
+                )}
+            </CardContent>
+        </Card>
+    )
+}
+```
+
+### 2. Form Handling with React Hook Form + Zod
+```typescript
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/Components/ui/form"
+
+const domainSchema = z.object({
+    url: z.string()
+        .url("Please enter a valid URL")
+        .refine(url => url.startsWith('https://'), "Only HTTPS URLs are allowed"),
+    email_mode: z.enum(["expected", "none"])
+})
+
+export function AddDomainForm() {
+    const form = useForm<z.infer<typeof domainSchema>>({
+        resolver: zodResolver(domainSchema),
+        defaultValues: { email_mode: "expected" }
+    })
+    
+    const onSubmit = (values: z.infer<typeof domainSchema>) => {
+        router.post('/domains', values)
+    }
+    
+    return (
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)}>
+                <FormField
+                    control={form.control}
+                    name="url"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Domain URL</FormLabel>
+                            <FormControl>
+                                <Input placeholder="https://example.com" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <Button type="submit" disabled={form.formState.isSubmitting}>
+                    Add Domain
+                </Button>
+            </form>
+        </Form>
+    )
+}
+```
+
+## Error Handling Patterns
+
+### 1. Graceful API Error Handling
 ```php
-// Weight distribution for scoring
-SSL/TLS Scanner: 40%      // Certificate, ciphers, protocols
-Security Headers: 30%     // HSTS, CSP, X-Frame-Options
-DNS/Email Security: 30%   // SPF, DKIM, DMARC, DNSSEC
+// In Controllers
+class DomainScanController extends Controller {
+    public function store(Domain $domain) {
+        try {
+            $scan = $domain->scans()->create(['status' => 'pending']);
+            RunDomainScan::dispatch($scan);
+            
+            return response()->json([
+                'message' => 'Scan started successfully',
+                'scan_id' => $scan->id
+            ]);
+        } catch (Exception $e) {
+            Log::error('Scan initiation failed', [
+                'domain_id' => $domain->id,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'message' => 'Failed to start scan',
+                'error' => app()->environment('production') ? 'Internal server error' : $e->getMessage()
+            ], 500);
+        }
+    }
+}
 ```
 
-### Database Schema
-```sql
-users (UUID PK) → domains (UUID PK) → scans (UUID PK)
-                                    → scan_modules (UUID PK)
-                                    → reports (UUID PK)
-                                    
-JSONB storage for scan results
-Optimized indexes for common queries
-Auto-scaling with hibernation
-```
-
-## Laravel Cloud Queue Architecture
-
-### Revolutionary Auto-scaling
-**Previous Approach**: Manual Horizon configuration with fixed worker counts
+### 2. Scanner Error Handling
 ```php
-// OLD: Manual worker configuration in config/horizon.php
-'production' => [
-    'default' => [
-        'minProcesses' => 2,
-        'maxProcesses' => 20,
-        // Manual guesswork for scaling
-    ],
-]
+class SslTlsScanner implements Scanner {
+    public function scan(string $url, array $context = []): ModuleResult {
+        try {
+            NetworkGuard::assertPublicHttpUrl($url);
+            $result = $this->performSslAnalysis($url);
+            
+            return new ModuleResult(
+                module: 'ssl_tls',
+                score: $result->score,
+                status: 'ok',
+                raw: $result->data
+            );
+        } catch (NetworkGuardException $e) {
+            Log::warning('SSRF attempt blocked', ['url' => $url, 'error' => $e->getMessage()]);
+            
+            return new ModuleResult(
+                module: 'ssl_tls',
+                score: 0,
+                status: 'error',
+                raw: ['error' => 'Invalid or unsafe URL']
+            );
+        } catch (Exception $e) {
+            Log::error('SSL scan failed', ['url' => $url, 'error' => $e->getMessage()]);
+            
+            return new ModuleResult(
+                module: 'ssl_tls',
+                score: 0,
+                status: 'error',
+                raw: ['error' => 'Scan failed']
+            );
+        }
+    }
+}
 ```
 
-**New Laravel Cloud Approach**: Automatic scaling based on real-time metrics
-- **Latency-Driven Scaling**: Adds workers when jobs queue too long
-- **CPU/RAM Monitoring**: Tracks worker performance automatically
-- **Job Throughput**: Monitors processing rates and backlog
-- **Cost Optimization**: Scales down when demand decreases
+### 3. Frontend Error Handling
+```typescript
+// Global error handler for Inertia
+import { router } from '@inertiajs/react'
+import { toast } from 'sonner'
 
-### Queue Processing Benefits
-- **Zero Configuration**: No manual worker tuning required
-- **Real-time Monitoring**: Built-in metrics and dashboards
-- **Perfect for Security Scans**: Handles varying scan loads efficiently
-- **Cost Efficient**: Pay only for workers actually needed
+router.on('error', (event) => {
+    if (event.detail.response.status === 429) {
+        toast.error('Too many requests. Please wait and try again.')
+    } else if (event.detail.response.status >= 500) {
+        toast.error('Server error. Please try again later.')
+    }
+})
 
-## Development Tasks (Updated for Laravel Cloud)
-
-### Task System Structure
-Each task uses numbered subtasks (X.1, X.2, etc.) for granular tracking:
-- **X.1**: Always planning/design
-- **X.2-X.5**: Implementation steps
-- **X.6**: Always testing/verification
-
-### 🔷 Task 1: Email Notifications
-```
-1.1 Plan notification types (scan complete, issues found, trial ending)
-1.2 Create notifications table and models
-1.3 Build notification preferences UI in Profile
-1.4 Implement Blade email templates with Achilleus branding
-1.5 Add notification queue jobs (auto-scaling handles delivery)
-1.6 Test email delivery and auto-scaling performance
-```
-
-### 🔷 Task 2: Enhanced Monitoring
-```
-2.1 Plan Laravel Cloud monitoring integration
-2.2 Implement queue cluster metrics dashboard
-2.3 Add hibernation cost tracking
-2.4 Build auto-scaling performance analytics
-2.5 Create alert system for queue failures
-2.6 Test monitoring accuracy and scaling triggers
-```
-
-### 🔷 Task 3: API Access
-```
-3.1 Plan API endpoints and authentication (Sanctum)
-3.2 Create personal access tokens with auto-scaling rate limits
-3.3 Build API token management UI
-3.4 Implement RESTful endpoints for domains/scans
-3.5 Add queue-aware rate limiting and usage tracking
-3.6 Test API performance under auto-scaling conditions
+// Component error boundaries
+export function ScanResults({ domain }: { domain: Domain }) {
+    const [error, setError] = useState<string | null>(null)
+    
+    const triggerScan = async () => {
+        try {
+            setError(null)
+            await router.post(`/domains/${domain.id}/scan`)
+            toast.success('Scan started successfully')
+        } catch (err) {
+            setError('Failed to start scan')
+            toast.error('Failed to start scan')
+        }
+    }
+    
+    if (error) {
+        return (
+            <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+            </Alert>
+        )
+    }
+    
+    // ... rest of component
+}
 ```
 
-### 🔷 Task 4: Scheduled Scans
-```
-4.1 Design scheduling options (daily, weekly, monthly)
-4.2 Create scan_schedules table and model
-4.3 Build scheduling UI in domain settings
-4.4 Implement Laravel scheduler with auto-scaling queues
-4.5 Add notification for scheduled scan results
-4.6 Test scheduling with queue cluster auto-scaling
-```
+## Testing Best Practices
 
-### 🔷 Task 5: Export Features
-```
-5.1 Plan export formats (CSV, Excel, JSON)
-5.2 Create export service with format handlers
-5.3 Build export UI with format selection
-5.4 Implement bulk export leveraging auto-scaling
-5.5 Add export history tracking
-5.6 Test export performance under varying loads
-```
-
-### 🔷 Task 6: Uptime Monitoring
-```
-6.1 Design uptime check architecture (separate from security)
-6.2 Create uptime_checks table and models
-6.3 Build uptime configuration UI
-6.4 Implement monitoring workers with auto-scaling
-6.5 Add downtime alerts and reporting
-6.6 Test monitoring accuracy with queue clusters
-```
-
-### 🔷 Task 7: White-Label Support
-```
-7.1 Plan white-label features (logo, colors, domain)
-7.2 Create white_label_configs table
-7.3 Build white-label settings UI
-7.4 Implement dynamic theming system
-7.5 Add custom domain support with Laravel Cloud SSL
-7.6 Test multiple white-label instances
+### 1. Test Structure (AAA Pattern)
+```php
+class SslTlsScannerTest extends TestCase {
+    /** @test */
+    public function it_detects_expired_certificates() {
+        // Arrange
+        $scanner = app(SslTlsScanner::class);
+        $expiredUrl = 'https://expired.badssl.com';
+        
+        // Act
+        $result = $scanner->scan($expiredUrl);
+        
+        // Assert
+        $this->assertEquals(0, $result->score);
+        $this->assertEquals('fail', $result->status);
+        $this->assertArrayHasKey('error', $result->raw);
+    }
+    
+    /** @test */
+    public function it_blocks_private_ip_addresses() {
+        // Arrange
+        $scanner = app(SslTlsScanner::class);
+        $privateUrl = 'https://192.168.1.1';
+        
+        // Act & Assert
+        $this->expectException(NetworkGuardException::class);
+        $scanner->scan($privateUrl);
+    }
+}
 ```
 
-### 🔷 Task 8: Advanced Scanner Options
-```
-8.1 Plan additional scanners (performance, accessibility)
-8.2 Create modular scanner plugin system
-8.3 Build scanner selection UI
-8.4 Implement new scanner modules with auto-scaling
-8.5 Add scanner-specific scoring weights
-8.6 Test new scanners and auto-scaling performance
-```
-
-## Key Technical Decisions
-
-### Why Laravel Cloud Over Traditional Hosting
-- **Zero DevOps**: No server management or scaling decisions
-- **Cost Efficiency**: Pay-per-use with hibernation
-- **Auto-scaling Queues**: Eliminates manual worker configuration
-- **Built for Laravel**: Optimized specifically for Laravel applications
-- **Enterprise Security**: WAF, DDoS protection, automatic SSL included
-
-### What We Avoided
-- **Manual Queue Configuration**: Laravel Cloud handles auto-scaling
-- **Traditional VPS**: Cloud manages everything automatically
-- **Custom Components**: shadcn/ui provides consistency
-- **Uptime Monitoring**: Not part of security focus (yet)
-- **Multiple Scan Types**: Single comprehensive scan simpler
-
-## Production Status
-
-### ✅ Fully Implemented
-- Complete authentication system with email verification
-- Domain CRUD with validation and limits
-- Three-scanner security analysis system
-- Auto-scaling queue processing with Laravel Cloud
-- Professional PDF report generation
-- Stripe subscription billing
-- 4-card dashboard with trends
-- Activity history and filtering
-- Mobile-responsive dark theme UI
-- Laravel Cloud deployment with hibernation
-
-### 🔄 Currently Disabled (via Pennant)
-- Client management features
-- Automation workflows
-- Team functionality
-
-### 📊 Success Metrics
-- **Target**: 300 customers @ $27 = $8,100 MRR
-- **Infrastructure Cost**: Optimized through hibernation and auto-scaling
-- **Trial Conversion**: Aiming for 30%
-- **Churn Rate**: Target <5% monthly
-- **Queue Performance**: >95% success rate with automatic scaling
-
-## Critical Implementation Notes
-
-### Security Considerations
-- **SSRF Protection**: NetworkGuard blocks internal IPs
-- **Rate Limiting**: 10 scans/minute per user
-- **Input Validation**: Form requests for all user input
-- **XSS Protection**: React auto-escaping
-- **SQL Injection**: Eloquent ORM parameterization
-
-### Performance Optimizations
-- **Auto-scaling Queues**: No manual worker tuning required
-- **Serverless Database**: Automatic performance scaling
-- **Query Caching**: 15-minute TTL for dashboard
-- **Eager Loading**: Prevent N+1 queries
-- **CDN Assets**: CloudFront edge caching
-
-### Laravel Cloud Benefits
-- **Zero DevOps**: No server management
-- **Auto-scaling**: Handles traffic spikes automatically
-- **Hibernation**: Saves costs when idle
-- **Managed Services**: Database, cache, storage, queues
-- **Automatic SSL**: Certificates handled
-- **Global CDN**: Fast asset delivery
-
-## Quick Reference
-
-### File Structure
-```
-resources/js/Pages/     # React page components
-app/Http/Controllers/   # Inertia controllers
-app/Services/          # Business logic
-app/Jobs/             # Auto-scaling queue jobs
-app/Models/           # Eloquent models
-app/Policies/         # Authorization
+### 2. Feature Testing with Authentication
+```php
+class DomainManagementTest extends TestCase {
+    use RefreshDatabase;
+    
+    /** @test */
+    public function user_can_add_domain_within_limit() {
+        // Arrange
+        $user = User::factory()->create();
+        $this->actingAs($user);
+        
+        // Act
+        $response = $this->post('/domains', [
+            'url' => 'https://example.com',
+            'email_mode' => 'expected'
+        ]);
+        
+        // Assert
+        $response->assertRedirect('/domains');
+        $this->assertDatabaseHas('domains', [
+            'user_id' => $user->id,
+            'url' => 'example.com' // Normalized
+        ]);
+    }
+    
+    /** @test */
+    public function user_cannot_add_domain_over_limit() {
+        // Arrange
+        $user = User::factory()->create();
+        $user->domains()->createMany(
+            factory(Domain::class, 10)->make()->toArray()
+        );
+        $this->actingAs($user);
+        
+        // Act
+        $response = $this->post('/domains', [
+            'url' => 'https://newdomain.com'
+        ]);
+        
+        // Assert
+        $response->assertSessionHasErrors('url');
+        $this->assertDatabaseMissing('domains', ['url' => 'newdomain.com']);
+    }
+}
 ```
 
-### Common Commands
+### 3. E2E Testing with Playwright MCP
+```typescript
+test('user can complete full scan workflow', async ({ page }) => {
+    // Arrange - Create user and login
+    await page.goto('/login')
+    await page.fill('[name="email"]', 'test@example.com')
+    await page.fill('[name="password"]', 'password')
+    await page.getByRole('button', { name: 'Login' }).click()
+    
+    // Act - Add domain and trigger scan
+    await page.goto('/domains')
+    await page.getByRole('button', { name: 'Add Domain' }).click()
+    
+    await page.fill('[name="url"]', 'https://example.com')
+    await page.getByRole('button', { name: 'Add & Scan' }).click()
+    
+    // Assert - Verify scan completion
+    await page.waitForSelector('[data-scan-status="completed"]', { timeout: 30000 })
+    
+    const scoreElement = await page.getByTestId('security-score')
+    await expect(scoreElement).toBeVisible()
+    
+    const score = await scoreElement.textContent()
+    expect(parseInt(score!)).toBeGreaterThanOrEqual(0)
+    expect(parseInt(score!)).toBeLessThanOrEqual(100)
+})
+```
+
+## Command Reference
+
+### Development Commands
 ```bash
-# Laravel Cloud auto-manages queue processing
-npm run dev             # Start Vite dev server
-php artisan pest        # Run test suite
-php artisan pint        # Format PHP code
-npm run build          # Production build
+# Start development
+php artisan serve
+npm run dev
+
+# Run tests (always run before commits)
+php artisan pest --parallel
+npm run type-check
+npx playwright test
+
+# Code quality
+php artisan pint
+npm run lint
+
+# Database
+php artisan migrate:fresh --seed
+php artisan tinker
 ```
 
-### Environment Keys
-```env
-# Laravel Cloud auto-injects DB/Redis/S3
-STRIPE_KEY=pk_live_xxx
-STRIPE_SECRET=sk_live_xxx
-STRIPE_WEBHOOK_SECRET=whsec_xxx
-STRIPE_PRICE_ID=price_xxx
+### Security Testing Commands
+```bash
+# Test with various SSL configurations
+curl -I https://badssl.com
+curl -I https://expired.badssl.com
+curl -I https://wrong.host.badssl.com
+curl -I https://self-signed.badssl.com
+curl -I https://untrusted-root.badssl.com
+
+# Test security headers
+curl -I https://example.com
+curl -I https://github.com  # Good headers example
+curl -I https://neverssl.com  # Minimal headers example
+
+# Test DNS configurations
+dig example.com A
+dig example.com MX
+dig _dmarc.example.com TXT
+dig default._domainkey.example.com TXT
+dig example.com CAA
+
+# Test rate limiting (should hit limit after configured threshold)
+for i in {1..15}; do curl -H "Authorization: Bearer $token" http://localhost:8000/api/domains/1/scan; done
+
+# Test input validation and SSRF protection
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"url":"http://192.168.1.1"}' \
+  http://localhost:8000/api/domains
+
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"url":"http://127.0.0.1"}' \
+  http://localhost:8000/api/domains
+
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"url":"http://169.254.169.254"}' \
+  http://localhost:8000/api/domains
+
+# Test timeout handling (use a slow/unresponsive service)
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"url":"https://httpbin.org/delay/60"}' \
+  http://localhost:8000/api/domains
 ```
 
-## Current Development Focus
-The application is **production-ready** with auto-scaling infrastructure. Next priorities should focus on growth features like email notifications (Task 1) and enhanced monitoring (Task 2) to leverage Laravel Cloud's new queue cluster capabilities. The auto-scaling queues eliminate the need for manual worker configuration, allowing focus on business features rather than infrastructure management.
+### Manual Verification Commands
+```bash
+# Verify domain creation
+php artisan tinker
+>>> User::find(1)->domains()->count()
+>>> Domain::where('url', 'example.com')->first()
+
+# Verify scan execution
+>>> $domain = Domain::first()
+>>> $scan = $domain->scans()->create(['status' => 'pending'])
+>>> \App\Jobs\RunDomainScan::dispatch($scan)
+
+# Test individual scanners
+>>> $sslScanner = app(\App\Services\Scanners\SslTlsScanner::class)
+>>> $result = $sslScanner->scan('https://github.com')
+>>> $result->score  // Should show SSL score
+>>> $result->raw    // Should show detailed SSL analysis
+
+>>> $headersScanner = app(\App\Services\Scanners\SecurityHeadersScanner::class)  
+>>> $result = $headersScanner->scan('https://github.com')
+>>> $result->raw['headers_found']  // Should show security headers
+
+>>> $dnsScanner = app(\App\Services\Scanners\DnsEmailScanner::class)
+>>> $result = $dnsScanner->scan('https://github.com', ['email_mode' => 'expected'])
+>>> $result->raw['email_security']  // Should show email security analysis
+
+# Verify rate limiting
+>>> app('cache')->get('throttle:scans:1')
+>>> app('cache')->get('scanner_rate_limit:ssl_tls:github.com')
+
+# Verify error handling
+>>> $sslScanner->scan('https://192.168.1.1')  // Should throw SSRFException
+>>> $sslScanner->scan('https://expired.badssl.com')  // Should return low score
+
+# Check scan results in database
+>>> $scan = \App\Models\Scan::with('modules')->latest()->first()
+>>> $scan->modules->pluck('score', 'module')  // Should show scores per module
+>>> $scan->total_score  // Should show weighted total
+>>> $scan->grade  // Should show letter grade
+```
+
+Remember: **Security first, test everything, trust nothing from external sources.**
+
+## Additional SaaS Systems Implementation
+
+### Email Communication System
+- **Welcome Sequence**: Automated emails for user activation (registration → first domain → first scan)
+- **Trial Management**: Smart reminders at days 7, 10, 12, 14 with user progress context
+- **Scan Notifications**: Completion alerts with score summary and critical issue warnings
+- **Billing Communications**: Payment confirmations, failures, and subscription changes
+- **Implementation**: Laravel Mail + Queue jobs with preference management
+
+### Support Infrastructure
+- **Contact Form**: Multi-category routing (billing/technical/feature/other) with priority levels
+- **FAQ System**: Searchable knowledge base with voting and analytics
+- **Feedback Widget**: Contextual in-app feedback collection with screenshot capture
+- **Ticket Management**: Support ticket system with auto-responses and routing
+- **Implementation**: Forms + Knowledge base + Support ticket models
+
+### Legal & Compliance Pages
+- **Terms of Service**: Domain ownership requirements, acceptable use, liability limitations
+- **Privacy Policy**: GDPR-compliant data handling, user rights, transparent practices
+- **Cookie Consent**: Preference management with essential/analytics/marketing categories
+- **Legal Framework**: Document versioning, acceptance tracking, compliance automation
+- **Implementation**: Legal document models + consent tracking + GDPR user controls
+
+### Guided Onboarding Flow
+- **Welcome Experience**: Interactive intro with personalization and value demonstration
+- **Progressive Disclosure**: Feature introduction based on user behavior and milestones
+- **Achievement System**: Gamification with points, badges, and milestone celebrations
+- **Analytics Integration**: Conversion funnel tracking and A/B testing framework
+- **Implementation**: React components + achievement tracking + onboarding analytics
+
+### Integration Points
+- Add to **Phase 9** of execution plan (Day 17-18)
+- Database additions: notification_preferences, support_tickets, legal_documents, user_achievements
+- UI components using Shadcn/ui for consistency
+- Queue jobs for email processing and notifications
+- Analytics tracking for optimization and conversion measurement
