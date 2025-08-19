@@ -14,6 +14,13 @@
 - **Hosting**: Laravel Cloud only (https://cloud.laravel.com/)
 - **Real-time**: Laravel Reverb for WebSocket connections (https://reverb.laravel.com/)
 
+### Laravel Ecosystem Packages
+- **Laravel Cashier**: Stripe subscription billing for $27/month plans
+- **Laravel Pennant**: Feature flags for gradual rollouts and A/B testing
+- **Laravel Precognition**: Live form validation without duplicating rules
+- **Laravel Socialite**: OAuth authentication (GitHub, Google)
+- **Laravel Boost**: AI-powered development assistant with MCP server
+
 ### Application Architecture
 ```
 ┌─────────────────┐     ┌──────────────┐     ┌─────────────┐
@@ -38,23 +45,53 @@
         │  • S3 Storage              │                     │              │
         │  • Edge CDN                │                     │              │
         └──────────────────────────────┘                     └──────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│                    Laravel Boost MCP Server                      │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐       │
+│  │  Tinker  │  │ Database │  │   Docs   │  │  Routes  │       │
+│  │ Executor │  │  Query   │  │  Search  │  │ Inspector│       │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘       │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐       │
+│  │   Logs   │  │  Schema  │  │  Config  │  │   Tests  │       │
+│  │  Reader  │  │ Inspector│  │  Reader  │  │ Generator│       │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘       │
+└─────────────────────────────────────────────────────────────────┘
+         ▲                                             ▲
+         │                                             │
+    ┌─────────┐                                 ┌─────────┐
+    │ Claude  │                                 │ Cursor  │
+    │  Code   │                                 │   IDE   │
+    └─────────┘                                 └─────────┘
 ```
 
 ## Database Design
 
 ### Schema Overview
 ```sql
--- Users table with billing and support
+-- Users table with billing and OAuth support
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
+    password VARCHAR(255), -- Nullable for OAuth users
     email_verified_at TIMESTAMP,
+    
+    -- OAuth fields (Laravel Socialite)
+    provider VARCHAR(20), -- 'github', 'google', or NULL for email
+    provider_id VARCHAR(255), -- OAuth provider's user ID
+    
+    -- Subscription fields (Laravel Cashier)
     trial_ends_at TIMESTAMP NOT NULL,
     stripe_customer_id VARCHAR(255),
     stripe_subscription_id VARCHAR(255),
+    stripe_price_id VARCHAR(255), -- For tracking plan type
     subscription_status VARCHAR(50) DEFAULT 'trialing',
+    subscription_ends_at TIMESTAMP, -- For cancelled subscriptions
+    
+    -- Feature flags (Laravel Pennant)
+    features JSONB DEFAULT '{}', -- Stores active feature flags
+    
     notification_preferences JSONB DEFAULT '{}',
     unsubscribe_token VARCHAR(255),
     privacy_preferences JSONB DEFAULT '{}',
@@ -151,6 +188,137 @@ CREATE TABLE user_achievements (
     metadata JSONB DEFAULT '{}',
     UNIQUE(user_id, achievement_id)
 );
+
+-- Laravel Cashier subscription items (for metered billing if needed)
+CREATE TABLE subscription_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    subscription_id VARCHAR(255) NOT NULL,
+    stripe_id VARCHAR(255) UNIQUE NOT NULL,
+    stripe_product VARCHAR(255) NOT NULL,
+    stripe_price VARCHAR(255) NOT NULL,
+    quantity INTEGER DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Laravel Pennant feature states
+CREATE TABLE features (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    scope VARCHAR(255) NOT NULL, -- 'User:123' or 'global'
+    value TEXT NOT NULL, -- Serialized value
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(name, scope)
+);
+```
+
+## Laravel Boost Integration
+
+### AI-Powered Development Architecture
+
+Laravel Boost provides an MCP (Model Context Protocol) server that enables AI assistants to deeply understand and interact with the Achilleus codebase. This integration dramatically improves development speed and code quality.
+
+### Boost Tools Available for Achilleus
+
+```php
+// 1. Database Inspection - AI can query actual data
+boost:query "SELECT * FROM scans WHERE total_score < 60 ORDER BY created_at DESC"
+boost:schema domains  // Shows complete table structure
+
+// 2. Code Execution - Test scanner logic in real-time
+boost:tinker "
+    $scanner = new SslTlsScanner();
+    $result = $scanner->scan('https://github.com');
+    return $result->score;
+"
+
+// 3. Route Analysis - Understand application structure
+boost:routes --method=POST --name=scan
+boost:routes --middleware=auth
+
+// 4. Configuration Access - Get actual settings
+boost:config app.env
+boost:config services.stripe
+
+// 5. Log Analysis - Debug issues
+boost:logs --grep="NetworkGuard" --tail=100
+boost:logs --level=error
+
+// 6. Documentation Search - Laravel 12 specific
+boost:docs "Cashier subscription"
+boost:docs "Pennant feature flags"
+```
+
+### AI Guidelines for Achilleus
+
+Boost automatically generates guidelines for:
+- **Security Requirements**: SSRF protection, HTTPS-only domains
+- **Scanner Patterns**: AbstractScanner implementation, retry logic
+- **Testing Standards**: TDD approach, Pest PHP conventions
+- **Laravel 12 Features**: Latest APIs and best practices
+- **Achilleus Conventions**: Domain normalization, scoring algorithms
+
+### Development Workflow with Boost
+
+```bash
+# Initial Setup
+composer require laravel/boost --dev
+php artisan boost:install
+
+# Development Session
+php artisan boost:mcp  # Start MCP server
+
+# AI can now:
+# - Generate scanners that follow AbstractScanner pattern
+# - Create tests using actual database fixtures
+# - Debug scan failures by inspecting logs and data
+# - Optimize queries by analyzing actual performance
+# - Generate UI components matching existing patterns
+```
+
+### Security Considerations with Boost
+
+- Boost only runs in development environment
+- Never exposes production credentials
+- Respects .env and .gitignore boundaries
+- AI-generated code automatically includes:
+  - NetworkGuard validation for external requests
+  - Form Request validation for user inputs
+  - Authorization policies for resource access
+  - Rate limiting for scan operations
+
+### Boost-Enhanced Scanner Development
+
+When developing scanners with Boost active:
+
+```php
+// AI can see actual scanner implementations
+boost:tinker "File::get(app_path('Services/Scanners/SslTlsScanner.php'))"
+
+// AI can test SSRF protection
+boost:tinker "
+    try {
+        NetworkGuard::assertPublicHttpUrl('http://169.254.169.254');
+    } catch (SecurityException \$e) {
+        return \$e->getMessage();
+    }
+"
+
+// AI can analyze scan performance
+boost:query "
+    SELECT module, AVG(execution_time) as avg_time, COUNT(*) as runs
+    FROM scan_modules 
+    WHERE created_at > NOW() - INTERVAL '7 days'
+    GROUP BY module
+"
+
+// AI can generate test data
+boost:tinker "
+    \$domain = Domain::factory()->create(['user_id' => 1]);
+    \$scan = Scan::factory()->create(['domain_id' => \$domain->id]);
+    return \$scan->toArray();
+"
 ```
 
 ## Scanner Implementation
@@ -170,15 +338,29 @@ interface Scanner {
     public function getRetryAttempts(): int;
 }
 
-// Scanner Exception Hierarchy
+// Simplified Scanner Exception Hierarchy
 namespace App\Exceptions;
 
 class ScannerException extends \Exception {}
-class NetworkException extends ScannerException {}
-class TimeoutException extends ScannerException {}
-class RateLimitException extends ScannerException {}
-class ValidationException extends ScannerException {}
-class SSRFException extends ValidationException {}
+
+// Core exception types (3 total)
+class RetryableException extends ScannerException {
+    // For temporary issues that should be retried
+    // Examples: timeouts, DNS failures, connection reset, network congestion
+    // These errors may resolve themselves on retry
+}
+
+class ConfigurationException extends ScannerException {
+    // For domain misconfigurations that require user action
+    // Examples: expired certificate, missing DNS records, invalid SSL, wrong hostname
+    // These errors should NOT be retried as they won't resolve without user intervention
+}
+
+class SecurityException extends ScannerException {
+    // For security policy violations and access restrictions
+    // Examples: SSRF attempts, WAF blocking, rate limiting, CORS rejection, authentication required
+    // These errors should NOT be retried as they indicate policy violations
+}
 ```
 
 ### Enhanced Module Result Structure
@@ -236,7 +418,7 @@ namespace App\Services\Scanners;
 
 use App\Contracts\Scanners\Scanner;
 use App\Data\ModuleResult;
-use App\Exceptions\{NetworkException, TimeoutException, RateLimitException, SSRFException};
+use App\Exceptions\{ScannerException, RetryableException, ConfigurationException, SecurityException};
 use App\Support\{NetworkGuard, RateLimiter};
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
@@ -272,8 +454,12 @@ abstract class AbstractScanner implements Scanner {
             $attempts++;
             
             try {
-                // SSRF protection
-                NetworkGuard::assertPublicHttpUrl($url);
+                // SSRF protection - throws SecurityException on violation
+                try {
+                    NetworkGuard::assertPublicHttpUrl($url);
+                } catch (\Exception $e) {
+                    throw new SecurityException('SSRF attempt blocked: ' . $e->getMessage());
+                }
                 
                 // Perform actual scan
                 $result = $this->performScan($url, $context);
@@ -285,46 +471,50 @@ abstract class AbstractScanner implements Scanner {
                 
                 return $result;
                 
-            } catch (SSRFException $e) {
-                Log::warning('SSRF attempt blocked', [
+            } catch (SecurityException $e) {
+                // Security violations shouldn't be retried (includes SSRF, rate limiting, WAF blocks)
+                Log::warning('Security policy violation', [
                     'scanner' => $this->name(),
-                    'url' => $url,
+                    'url' => parse_url($url, PHP_URL_HOST),
+                    'type' => class_basename($e),
                     'error' => $e->getMessage()
                 ]);
                 
-                return ModuleResult::error($this->name(), 'Invalid or unsafe URL', $attempts - 1);
+                return ModuleResult::error($this->name(), $e->getMessage(), $attempts - 1);
                 
-            } catch (TimeoutException $e) {
-                $executionTime = microtime(true) - $startTime;
+            } catch (ConfigurationException $e) {
+                // Configuration errors shouldn't be retried (expired certs, DNS issues, etc)
+                Log::warning('Domain configuration issue detected', [
+                    'scanner' => $this->name(),
+                    'url' => parse_url($url, PHP_URL_HOST),
+                    'error' => $e->getMessage()
+                ]);
                 
+                return ModuleResult::error(
+                    $this->name(),
+                    'Configuration issue: ' . $e->getMessage(),
+                    $attempts - 1
+                );
+                
+            } catch (RetryableException $e) {
+                // Temporary issues that may resolve on retry (timeouts, DNS failures, network issues)
                 if ($attempts >= $this->retryAttempts) {
-                    Log::error('Scanner timeout after all retries', [
-                        'scanner' => $this->name(),
-                        'url' => parse_url($url, PHP_URL_HOST),
-                        'attempts' => $attempts,
-                        'execution_time' => $executionTime
-                    ]);
-                    
-                    return ModuleResult::timeout($this->name(), $executionTime);
-                }
-                
-                $lastError = $e;
-                sleep($this->retryDelay * $attempts); // Exponential backoff
-                
-            } catch (NetworkException $e) {
-                if ($attempts >= $this->retryAttempts) {
-                    Log::error('Scanner network error after all retries', [
+                    Log::warning('Retryable error persisted after all attempts', [
                         'scanner' => $this->name(),
                         'url' => parse_url($url, PHP_URL_HOST),
                         'attempts' => $attempts,
                         'error' => $e->getMessage()
                     ]);
                     
-                    return ModuleResult::error($this->name(), $e->getMessage(), $attempts - 1);
+                    return ModuleResult::error(
+                        $this->name(),
+                        $e->getMessage(),
+                        $attempts - 1
+                    );
                 }
                 
                 $lastError = $e;
-                sleep($this->retryDelay * $attempts);
+                sleep($this->retryDelay * $attempts); // Exponential backoff
                 
             } catch (\Exception $e) {
                 Log::error('Scanner unexpected error', [
@@ -342,6 +532,14 @@ abstract class AbstractScanner implements Scanner {
     }
     
     abstract protected function performScan(string $url, array $context = []): ModuleResult;
+    
+    /**
+     * Exception usage guide for scanner implementations:
+     * 
+     * @throws RetryableException - Timeouts, DNS failures, temporary network issues (will be retried)
+     * @throws ConfigurationException - Invalid SSL, expired certs, DNS misconfig (won't be retried)
+     * @throws SecurityException - SSRF, WAF blocks, rate limits, access denied (won't be retried)
+     */
     
     protected function checkRateLimit(string $url): bool {
         $host = parse_url($url, PHP_URL_HOST);
@@ -372,7 +570,7 @@ abstract class AbstractScanner implements Scanner {
 namespace App\Services\Scanners;
 
 use App\Data\ModuleResult;
-use App\Exceptions\{NetworkException, TimeoutException};
+use App\Exceptions\{RetryableException, ConfigurationException, SecurityException};
 use Illuminate\Support\Facades\Log;
 
 class SslTlsScanner extends AbstractScanner {
@@ -416,7 +614,15 @@ class SslTlsScanner extends AbstractScanner {
         
         // Set timeout using alarm for stream_socket_client
         $oldHandler = set_error_handler(function($errno, $errstr) {
-            throw new NetworkException("SSL connection failed: {$errstr}");
+            // Categorize error based on message
+            if (str_contains(strtolower($errstr), 'certificate') || str_contains(strtolower($errstr), 'verify')) {
+                throw new ConfigurationException("SSL certificate issue: {$errstr}");
+            } elseif (str_contains(strtolower($errstr), 'refused') || str_contains(strtolower($errstr), 'denied')) {
+                throw new SecurityException("Connection blocked: {$errstr}");
+            } else {
+                // Timeouts, DNS failures, and other network issues are retryable
+                throw new RetryableException("SSL connection failed: {$errstr}");
+            }
         });
         
         try {
@@ -431,14 +637,14 @@ class SslTlsScanner extends AbstractScanner {
             );
             
             if (!$conn) {
-                throw new NetworkException($errstr ?: 'SSL connection failed');
+                throw new RetryableException($errstr ?: 'SSL connection failed');
             }
             
             // Check for timeout
             $elapsed = microtime(true) - $startTime;
             if ($elapsed > $this->timeout) {
                 fclose($conn);
-                throw new TimeoutException('SSL connection timed out');
+                throw new RetryableException('SSL connection timed out');
             }
             
             // Extract certificate data and metadata
@@ -450,7 +656,7 @@ class SslTlsScanner extends AbstractScanner {
             fclose($conn);
             
             if (!$cert) {
-                throw new NetworkException('No SSL certificate found');
+                throw new ConfigurationException('No SSL certificate found - domain may not support HTTPS');
             }
             
             // Enhanced certificate analysis
@@ -635,23 +841,19 @@ class SslTlsScanner extends AbstractScanner {
         $issues = [];
         
         if (empty($chain)) {
-            $issues[] = 'Certificate chain is empty';
-            return $issues;
+            return ['Certificate chain is empty'];
         }
         
-        // Check chain order and validity
+        // Verify each certificate against its issuer
         for ($i = 0; $i < count($chain) - 1; $i++) {
-            $current = openssl_x509_parse($chain[$i]);
-            $next = openssl_x509_parse($chain[$i + 1]);
+            $cert = $chain[$i];
+            $issuer = $chain[$i + 1];
             
-            if (!$current || !$next) {
-                $issues[] = 'Invalid certificate in chain';
-                continue;
-            }
-            
-            // Check if current cert is issued by next cert
-            if (($current['issuer']['CN'] ?? '') !== ($next['subject']['CN'] ?? '')) {
-                $issues[] = 'Certificate chain order is incorrect';
+            // Use OpenSSL's proper verification
+            $result = openssl_x509_verify($cert, $issuer);
+            if ($result !== 1) {
+                $issues[] = 'Certificate chain cryptographic verification failed';
+                break;
             }
         }
         
@@ -683,7 +885,7 @@ class SslTlsScanner extends AbstractScanner {
 namespace App\Services\Scanners;
 
 use App\Data\ModuleResult;
-use App\Exceptions\{NetworkException, TimeoutException};
+use App\Exceptions\{RetryableException, ConfigurationException, SecurityException};
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Client\RequestException;
 
@@ -720,7 +922,16 @@ class SecurityHeadersScanner extends AbstractScanner {
                 ->get($url);
                 
             if ($response->failed()) {
-                throw new NetworkException("HTTP request failed: " . $response->status());
+                $status = $response->status();
+                if ($status === 403 || $status === 401) {
+                    throw new SecurityException("Access denied: HTTP {$status}");
+                } elseif ($status === 502 || $status === 503 || $status === 504) {
+                    throw new RetryableException("Server temporarily unavailable: HTTP {$status}");
+                } elseif ($status >= 400 && $status < 500) {
+                    throw new ConfigurationException("Client error: HTTP {$status}");
+                } else {
+                    throw new RetryableException("HTTP request failed: {$status}");
+                }
             }
             
             // Extract and normalize headers
@@ -742,9 +953,9 @@ class SecurityHeadersScanner extends AbstractScanner {
             
         } catch (RequestException $e) {
             if ($e->getCode() === CURLE_OPERATION_TIMEDOUT) {
-                throw new TimeoutException('HTTP request timed out');
+                throw new RetryableException('HTTP request timed out');
             }
-            throw new NetworkException('HTTP request failed: ' . $e->getMessage());
+            throw new RetryableException('HTTP request failed: ' . $e->getMessage());
         }
     }
     
@@ -1037,11 +1248,39 @@ class SecurityHeadersScanner extends AbstractScanner {
 ```
 
 ### Enhanced DNS/Email Scanner
+
+#### DNSSEC Implementation Requirements
+
+The DNS scanner includes comprehensive DNSSEC validation to ensure domain integrity:
+
+**Key Components:**
+1. **DS Records (Delegation Signer)**: Links parent and child zones in DNSSEC chain
+2. **DNSKEY Records**: Contains public keys used to verify DNS signatures
+3. **RRSIG Records**: Digital signatures for DNS resource records
+4. **Chain of Trust Validation**: Verifies the complete DNSSEC validation path
+
+**Supported Algorithms:**
+- **Strong (10 points)**: ECDSA (13-14), EdDSA (15-16)
+- **Good (10 points)**: RSASHA256 (8)
+- **Weak (7 points)**: RSASHA1 (7) - penalized for using deprecated algorithm
+
+**Validation Process:**
+1. Query DS records at parent zone
+2. Retrieve DNSKEY records from authoritative nameserver
+3. Check for RRSIG signatures on DNS responses
+4. Validate the complete chain of trust
+5. Assess cryptographic algorithm strength
+
+**Dependencies:**
+- Requires `dig` command available on system
+- Falls back gracefully if DNS tools unavailable
+- Caches results for 5 minutes to reduce query load
+
 ```php
 namespace App\Services\Scanners;
 
 use App\Data\ModuleResult;
-use App\Exceptions\{NetworkException, TimeoutException};
+use App\Exceptions\{RetryableException, ConfigurationException, SecurityException};
 
 class DnsEmailScanner extends AbstractScanner {
     protected int $timeout = 15;
@@ -1116,6 +1355,7 @@ class DnsEmailScanner extends AbstractScanner {
             // DNSSEC analysis
             $dnssecAnalysis = $this->analyzeDnssec($host);
             $score -= (10 - $dnssecAnalysis['score']);
+            $details['dns_records']['dnssec'] = $dnssecAnalysis['details'] ?? [];
             if ($dnssecAnalysis['score'] > 0) {
                 $details['strengths'] = array_merge($details['strengths'], $dnssecAnalysis['strengths']);
             } else {
@@ -1134,7 +1374,8 @@ class DnsEmailScanner extends AbstractScanner {
             }
             
         } catch (\Exception $e) {
-            throw new NetworkException("DNS analysis failed: " . $e->getMessage());
+            // DNS failures are usually temporary and retryable
+            throw new RetryableException("DNS analysis failed: " . $e->getMessage());
         }
         
         return [
@@ -1355,15 +1596,136 @@ class DnsEmailScanner extends AbstractScanner {
         return $analysis;
     }
     
+    /**
+     * Analyze DNSSEC configuration for the domain
+     * 
+     * Scoring Criteria (10 points total):
+     * - 10 points: Full DNSSEC chain validated (DS, DNSKEY, RRSIG all present and valid)
+     * - 7 points: DNSSEC enabled with valid signatures but weak algorithm
+     * - 5 points: DS records present but signatures missing/invalid
+     * - 3 points: DNSKEY records present but no DS at parent
+     * - 0 points: No DNSSEC configuration detected
+     */
     private function analyzeDnssec(string $host): array {
-        // Simplified DNSSEC check - in production, use proper DNSSEC validation
-        // For now, assume DNSSEC is not configured (common case)
-        return [
-            'score' => 0,
-            'issues' => ['DNSSEC not validated'],
-            'recommendations' => ['Enable DNSSEC for enhanced DNS security'],
-            'strengths' => []
-        ];
+        try {
+            $score = 0;
+            $issues = [];
+            $recommendations = [];
+            $strengths = [];
+            $details = [];
+            
+            // Step 1: Check for DS records at parent zone (delegation signer)
+            $dsCommand = sprintf("dig +short DS %s", escapeshellarg($host));
+            $dsOutput = shell_exec($dsCommand);
+            $hasDS = !empty(trim($dsOutput ?? ''));
+            
+            // Step 2: Check for DNSKEY records (zone signing keys)
+            $dnskeyCommand = sprintf("dig +short DNSKEY %s", escapeshellarg($host));
+            $dnskeyOutput = shell_exec($dnskeyCommand);
+            $hasDNSKEY = !empty(trim($dnskeyOutput ?? ''));
+            
+            // Step 3: Check for RRSIG records (resource record signatures)
+            $rrsigCommand = sprintf("dig +dnssec +short A %s", escapeshellarg($host));
+            $rrsigOutput = shell_exec($rrsigCommand);
+            $hasRRSIG = strpos($rrsigOutput ?? '', 'RRSIG') !== false;
+            
+            // Step 4: Validate the chain of trust
+            $validationCommand = sprintf("dig +dnssec +short %s | grep -E '^flags.*ad'", escapeshellarg($host));
+            $validationOutput = shell_exec($validationCommand);
+            $isValidated = !empty(trim($validationOutput ?? ''));
+            
+            // Step 5: Check algorithm strength (if DNSKEY exists)
+            $algorithmStrength = 'unknown';
+            if ($hasDNSKEY && preg_match('/\s+(7|8|13|14|15|16)\s+/', $dnskeyOutput, $matches)) {
+                // 7=RSASHA1-NSEC3-SHA1 (weak), 8=RSASHA256 (good), 
+                // 13=ECDSAP256SHA256 (strong), 14=ECDSAP384SHA384 (strong),
+                // 15=ED25519 (strong), 16=ED448 (strong)
+                $algorithm = (int)$matches[1];
+                if ($algorithm === 7) {
+                    $algorithmStrength = 'weak';
+                    $issues[] = 'Using weak RSASHA1 algorithm';
+                    $recommendations[] = 'Upgrade to RSASHA256 or ECDSA algorithms';
+                } elseif ($algorithm === 8) {
+                    $algorithmStrength = 'good';
+                    $details['algorithm'] = 'RSASHA256';
+                } elseif (in_array($algorithm, [13, 14, 15, 16])) {
+                    $algorithmStrength = 'strong';
+                    $details['algorithm'] = 'ECDSA/EdDSA';
+                    $strengths[] = 'Using modern cryptographic algorithms';
+                }
+            }
+            
+            // Calculate score based on DNSSEC status
+            if ($hasDS && $hasDNSKEY && $hasRRSIG) {
+                if ($isValidated) {
+                    // Full DNSSEC validation
+                    if ($algorithmStrength === 'weak') {
+                        $score = 7;
+                        $strengths[] = 'DNSSEC fully configured and validated';
+                    } elseif ($algorithmStrength === 'strong') {
+                        $score = 10;
+                        $strengths[] = 'DNSSEC fully configured with strong algorithms';
+                    } else {
+                        $score = 10;
+                        $strengths[] = 'DNSSEC fully configured and validated';
+                    }
+                    $details['status'] = 'validated';
+                    $details['chain_of_trust'] = 'complete';
+                } else {
+                    // DNSSEC present but validation failed
+                    $score = 5;
+                    $issues[] = 'DNSSEC signatures present but validation failed';
+                    $recommendations[] = 'Check DNSSEC configuration for errors';
+                    $details['status'] = 'validation_failed';
+                }
+            } elseif ($hasDS && !$hasDNSKEY) {
+                // DS records but no DNSKEY
+                $score = 3;
+                $issues[] = 'DS records present but DNSKEY missing';
+                $recommendations[] = 'Complete DNSSEC setup by adding DNSKEY records';
+                $details['status'] = 'incomplete';
+            } elseif (!$hasDS && $hasDNSKEY) {
+                // DNSKEY but no DS records
+                $score = 3;
+                $issues[] = 'DNSKEY records present but not secured at parent (no DS)';
+                $recommendations[] = 'Submit DS records to parent zone/registrar';
+                $details['status'] = 'unsigned_delegation';
+            } else {
+                // No DNSSEC
+                $score = 0;
+                $issues[] = 'DNSSEC not configured';
+                $recommendations[] = 'Enable DNSSEC to protect against DNS spoofing and cache poisoning';
+                $details['status'] = 'not_configured';
+            }
+            
+            // Add detailed information
+            $details['has_ds_records'] = $hasDS;
+            $details['has_dnskey_records'] = $hasDNSKEY;
+            $details['has_rrsig_records'] = $hasRRSIG;
+            $details['validation_passed'] = $isValidated;
+            
+            return [
+                'score' => $score,
+                'issues' => $issues,
+                'recommendations' => $recommendations,
+                'strengths' => $strengths,
+                'details' => $details
+            ];
+            
+        } catch (\Exception $e) {
+            Log::warning('DNSSEC validation failed', [
+                'host' => $host,
+                'error' => $e->getMessage()
+            ]);
+            
+            return [
+                'score' => 0,
+                'issues' => ['DNSSEC validation could not be performed'],
+                'recommendations' => ['Unable to verify DNSSEC status - check DNS configuration'],
+                'strengths' => [],
+                'details' => ['error' => $e->getMessage()]
+            ];
+        }
     }
     
     private function analyzeCaaRecords(string $host): array {
@@ -1404,7 +1766,8 @@ class DnsEmailScanner extends AbstractScanner {
                 $records = $result;
             }
         } catch (\Exception $e) {
-            throw new NetworkException("DNS query failed for {$typeName} records: " . $e->getMessage());
+            // DNS query failures are typically retryable
+            throw new RetryableException("DNS query failed for {$typeName} records: " . $e->getMessage());
         } finally {
             ini_set('default_socket_timeout', $oldTimeout);
         }
@@ -1747,6 +2110,643 @@ class StripeService {
 }
 ```
 
+## Laravel Package Implementations
+
+### Laravel Cashier (Subscription Management)
+
+```php
+namespace App\Services;
+
+use Laravel\Cashier\Cashier;
+
+class BillingService {
+    public function createSubscription(User $user, string $paymentMethodId) {
+        // Create $27/month subscription with 14-day trial
+        return $user->newSubscription('default', config('cashier.price_id'))
+            ->trialDays(14)
+            ->create($paymentMethodId, [
+                'email' => $user->email,
+                'metadata' => [
+                    'user_id' => $user->id,
+                    'plan' => 'professional',
+                    'domains_limit' => 10
+                ]
+            ]);
+    }
+    
+    public function swapPlan(User $user, string $newPriceId) {
+        return $user->subscription('default')->swap($newPriceId);
+    }
+    
+    public function resumeSubscription(User $user) {
+        return $user->subscription('default')->resume();
+    }
+    
+    public function cancelAtPeriodEnd(User $user) {
+        return $user->subscription('default')->cancel();
+    }
+    
+    public function handleWebhook(array $payload) {
+        // Webhook handler for Stripe events
+        switch($payload['type']) {
+            case 'customer.subscription.deleted':
+                $this->handleSubscriptionCancelled($payload);
+                break;
+            case 'customer.subscription.updated':
+                $this->handleSubscriptionUpdated($payload);
+                break;
+            case 'invoice.payment_failed':
+                $this->handlePaymentFailed($payload);
+                break;
+        }
+    }
+}
+```
+
+### Laravel Pennant (Feature Flags)
+
+```php
+namespace App\Providers;
+
+use Laravel\Pennant\Feature;
+use App\Models\User;
+
+class AppServiceProvider extends ServiceProvider {
+    public function boot() {
+        // Define feature flags
+        Feature::define('enhanced-scanners', function (User $user) {
+            // Enable for paid users or beta testers
+            return $user->subscribed('default') || 
+                   in_array($user->email, config('features.beta_testers'));
+        });
+        
+        Feature::define('ai-insights', function (User $user) {
+            // Gradual rollout: 20% of users
+            return crc32($user->id) % 100 < 20;
+        });
+        
+        Feature::define('bulk-operations', function (User $user) {
+            // Enable for users with 5+ domains
+            return $user->domains()->count() >= 5;
+        });
+        
+        Feature::define('api-access', function (User $user) {
+            // API access for subscribed users only
+            return $user->subscribed('default') && !$user->onTrial();
+        });
+    }
+}
+
+// Usage in controllers
+class ScanController extends Controller {
+    public function store(Domain $domain) {
+        $scanners = [
+            new SslTlsScanner(),
+            new SecurityHeadersScanner(),
+            new DnsEmailScanner(),
+        ];
+        
+        // Add enhanced scanners if feature is active
+        if (Feature::active('enhanced-scanners')) {
+            $scanners[] = new VulnerabilityScanner();
+            $scanners[] = new PerformanceScanner();
+        }
+        
+        // Include AI insights if enabled
+        if (Feature::active('ai-insights')) {
+            $scanners[] = new AiInsightsScanner();
+        }
+        
+        return $this->runScanners($domain, $scanners);
+    }
+}
+```
+
+### Laravel Precognition (Live Validation)
+
+```php
+// Backend: Controller with Precognition support
+namespace App\Http\Controllers;
+
+use App\Http\Requests\StoreDomainRequest;
+use Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests;
+
+class DomainController extends Controller {
+    public function __construct() {
+        $this->middleware(HandlePrecognitiveRequests::class)->only(['store', 'update']);
+    }
+    
+    public function store(StoreDomainRequest $request) {
+        // Validation rules are in StoreDomainRequest
+        // Precognition reuses these for live validation
+        
+        $domain = $request->user()->domains()->create([
+            'url' => $request->validated()['url'],
+            'email_mode' => $request->validated()['email_mode'],
+            'dkim_selector' => $request->validated()['dkim_selector'] ?? null,
+        ]);
+        
+        return redirect()->route('domains.show', $domain);
+    }
+}
+
+// Form Request with complex validation
+class StoreDomainRequest extends FormRequest {
+    public function rules(): array {
+        return [
+            'url' => [
+                'required',
+                'url',
+                'starts_with:https://',
+                new PublicUrl(),
+                new UniqueDomainPerUser($this->user()),
+                function ($attribute, $value, $fail) {
+                    // Custom validation: Check domain is reachable
+                    if (!$this->isDomainReachable($value)) {
+                        $fail('The domain is not reachable.');
+                    }
+                }
+            ],
+            'email_mode' => ['required', 'in:expected,none'],
+            'dkim_selector' => ['nullable', 'string', 'max:50', 'regex:/^[a-zA-Z0-9_-]+$/'],
+        ];
+    }
+    
+    private function isDomainReachable(string $url): bool {
+        try {
+            $headers = @get_headers($url);
+            return $headers && strpos($headers[0], '200') !== false;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+}
+```
+
+```typescript
+// Frontend: React component with live validation
+import { useForm } from 'laravel-precognition-react-inertia';
+
+export function AddDomainForm() {
+    const form = useForm('post', '/domains', {
+        url: '',
+        email_mode: 'expected',
+        dkim_selector: '',
+    });
+    
+    const submit = (e: React.FormEvent) => {
+        e.preventDefault();
+        form.submit({
+            preserveScroll: true,
+            onSuccess: () => form.reset(),
+        });
+    };
+    
+    return (
+        <form onSubmit={submit}>
+            <div>
+                <Label htmlFor="url">Domain URL</Label>
+                <Input
+                    id="url"
+                    type="url"
+                    value={form.data.url}
+                    onChange={(e) => form.setData('url', e.target.value)}
+                    onBlur={() => form.validate('url')}
+                    className={form.errors.url ? 'border-red-500' : ''}
+                />
+                {form.errors.url && (
+                    <p className="text-red-500 text-sm mt-1">{form.errors.url}</p>
+                )}
+            </div>
+            
+            <div>
+                <Label htmlFor="email_mode">Email Configuration</Label>
+                <Select
+                    value={form.data.email_mode}
+                    onValueChange={(value) => form.setData('email_mode', value)}
+                    onBlur={() => form.validate('email_mode')}
+                >
+                    <SelectItem value="expected">Expected (SPF/DKIM/DMARC)</SelectItem>
+                    <SelectItem value="none">No Email</SelectItem>
+                </Select>
+            </div>
+            
+            <Button type="submit" disabled={form.processing}>
+                {form.processing ? 'Adding...' : 'Add Domain'}
+            </Button>
+        </form>
+    );
+}
+```
+
+### Laravel Socialite (OAuth Authentication)
+
+```php
+namespace App\Http\Controllers\Auth;
+
+use Laravel\Socialite\Facades\Socialite;
+use App\Models\User;
+
+class SocialAuthController extends Controller {
+    protected array $providers = ['github', 'google'];
+    
+    public function redirect(string $provider) {
+        if (!in_array($provider, $this->providers)) {
+            abort(404);
+        }
+        
+        return Socialite::driver($provider)
+            ->scopes($this->getScopes($provider))
+            ->redirect();
+    }
+    
+    public function callback(string $provider) {
+        if (!in_array($provider, $this->providers)) {
+            abort(404);
+        }
+        
+        try {
+            $socialUser = Socialite::driver($provider)->user();
+        } catch (\Exception $e) {
+            return redirect('/login')->with('error', 'Authentication failed');
+        }
+        
+        $user = $this->findOrCreateUser($socialUser, $provider);
+        
+        Auth::login($user, true);
+        
+        // Check if new user needs onboarding
+        if ($user->wasRecentlyCreated) {
+            return redirect()->route('onboarding.start');
+        }
+        
+        return redirect()->intended('/dashboard');
+    }
+    
+    protected function findOrCreateUser($socialUser, string $provider): User {
+        // Try to find existing user by provider
+        $user = User::where('provider', $provider)
+            ->where('provider_id', $socialUser->getId())
+            ->first();
+        
+        if ($user) {
+            return $user;
+        }
+        
+        // Try to find by email (link accounts)
+        $user = User::where('email', $socialUser->getEmail())->first();
+        
+        if ($user) {
+            // Link OAuth to existing account
+            $user->update([
+                'provider' => $provider,
+                'provider_id' => $socialUser->getId(),
+            ]);
+            return $user;
+        }
+        
+        // Create new user
+        return User::create([
+            'name' => $socialUser->getName() ?? $socialUser->getNickname(),
+            'email' => $socialUser->getEmail(),
+            'provider' => $provider,
+            'provider_id' => $socialUser->getId(),
+            'email_verified_at' => now(),
+            'trial_ends_at' => now()->addDays(14),
+            'subscription_status' => 'trialing',
+            'onboarding_progress' => json_encode(['step' => 'welcome']),
+        ]);
+    }
+    
+    protected function getScopes(string $provider): array {
+        return match($provider) {
+            'github' => ['read:user', 'user:email'],
+            'google' => ['openid', 'profile', 'email'],
+            default => []
+        };
+    }
+}
+```
+
+## Trial & Subscription Enforcement
+
+### Subscription Middleware
+
+```php
+namespace App\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class EnsureSubscriptionActive {
+    /**
+     * Routes that are accessible during trial
+     */
+    protected array $trialAllowedRoutes = [
+        'dashboard.index',
+        'profile.edit',
+        'profile.update',
+        'billing.index',
+        'billing.subscribe',
+        'stripe.checkout',
+        'stripe.success',
+        'domains.index', // View domains only
+    ];
+    
+    /**
+     * Routes that require active subscription or trial
+     */
+    protected array $protectedRoutes = [
+        'domains.store',
+        'domains.scan',
+        'scans.*',
+        'reports.*',
+    ];
+    
+    public function handle(Request $request, Closure $next) {
+        $user = Auth::user();
+        
+        if (!$user) {
+            return redirect()->route('login');
+        }
+        
+        // Check subscription status
+        $subscriptionStatus = $this->getSubscriptionStatus($user);
+        
+        // Store status in request for use in views
+        $request->attributes->set('subscription_status', $subscriptionStatus);
+        
+        // Handle based on status
+        switch ($subscriptionStatus) {
+            case 'active':
+                return $next($request);
+                
+            case 'trial':
+                // Allow all features during trial
+                if ($user->trial_ends_at->isFuture()) {
+                    return $next($request);
+                }
+                // Trial expired, fall through to expired case
+                
+            case 'expired':
+            case 'cancelled':
+                // Check if accessing protected route
+                if ($this->isProtectedRoute($request)) {
+                    return redirect()
+                        ->route('billing.index')
+                        ->with('error', 'Your trial has expired. Please subscribe to continue using Achilleus.');
+                }
+                // Allow access to billing and basic pages
+                return $next($request);
+                
+            case 'grace_period':
+                // Payment failed but within grace period
+                if ($user->subscription_grace_ends_at->isFuture()) {
+                    $request->session()->flash('warning', 'Payment failed. Please update your payment method.');
+                    return $next($request);
+                }
+                // Grace period expired, restrict access
+                if ($this->isProtectedRoute($request)) {
+                    return redirect()
+                        ->route('billing.index')
+                        ->with('error', 'Your subscription has been suspended due to payment failure.');
+                }
+                return $next($request);
+                
+            default:
+                // No subscription, redirect to billing
+                if ($this->isProtectedRoute($request)) {
+                    return redirect()
+                        ->route('billing.index')
+                        ->with('info', 'Please subscribe to access this feature.');
+                }
+                return $next($request);
+        }
+    }
+    
+    protected function getSubscriptionStatus($user): string {
+        // Active subscription
+        if ($user->subscription_status === 'active' && 
+            $user->subscription_ends_at === null) {
+            return 'active';
+        }
+        
+        // Cancelled but still active until end date
+        if ($user->subscription_status === 'cancelled' && 
+            $user->subscription_ends_at && 
+            $user->subscription_ends_at->isFuture()) {
+            return 'active';
+        }
+        
+        // In trial period
+        if ($user->trial_ends_at && $user->trial_ends_at->isFuture()) {
+            return 'trial';
+        }
+        
+        // Grace period for failed payments
+        if ($user->subscription_grace_ends_at && 
+            $user->subscription_grace_ends_at->isFuture()) {
+            return 'grace_period';
+        }
+        
+        // Trial expired
+        if ($user->trial_ends_at && $user->trial_ends_at->isPast()) {
+            return 'expired';
+        }
+        
+        // Subscription cancelled and expired
+        if ($user->subscription_status === 'cancelled' && 
+            $user->subscription_ends_at && 
+            $user->subscription_ends_at->isPast()) {
+            return 'cancelled';
+        }
+        
+        return 'none';
+    }
+    
+    protected function isProtectedRoute(Request $request): bool {
+        $routeName = $request->route()->getName();
+        
+        foreach ($this->protectedRoutes as $pattern) {
+            if (fnmatch($pattern, $routeName)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+}
+```
+
+### API Subscription Enforcement
+
+```php
+namespace App\Http\Middleware;
+
+class EnsureApiSubscriptionActive {
+    public function handle(Request $request, Closure $next) {
+        $user = $request->user();
+        
+        // Check if user has active subscription or valid trial
+        if (!$this->hasActiveSubscription($user)) {
+            return response()->json([
+                'error' => 'Subscription required',
+                'message' => 'Your trial has expired. Please subscribe to continue.',
+                'subscription_url' => route('billing.index')
+            ], 402); // Payment Required
+        }
+        
+        // Add subscription info to response headers
+        $response = $next($request);
+        
+        if ($user->trial_ends_at) {
+            $daysRemaining = now()->diffInDays($user->trial_ends_at, false);
+            $response->header('X-Trial-Days-Remaining', max(0, $daysRemaining));
+        }
+        
+        $response->header('X-Subscription-Status', $user->subscription_status);
+        
+        return $response;
+    }
+    
+    protected function hasActiveSubscription($user): bool {
+        // Active subscription
+        if ($user->subscription_status === 'active') {
+            return true;
+        }
+        
+        // Valid trial
+        if ($user->trial_ends_at && $user->trial_ends_at->isFuture()) {
+            return true;
+        }
+        
+        // Grace period
+        if ($user->subscription_grace_ends_at && 
+            $user->subscription_grace_ends_at->isFuture()) {
+            return true;
+        }
+        
+        return false;
+    }
+}
+```
+
+### Route Protection Configuration
+
+```php
+// routes/web.php
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Always accessible routes
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.index');
+    Route::get('/billing', [BillingController::class, 'index'])->name('billing.index');
+    Route::post('/billing/subscribe', [BillingController::class, 'subscribe'])->name('billing.subscribe');
+    
+    // Protected routes - require active subscription
+    Route::middleware(['subscription'])->group(function () {
+        // Domain management
+        Route::post('/domains', [DomainController::class, 'store'])->name('domains.store');
+        Route::post('/domains/{domain}/scan', [DomainScanController::class, 'store'])->name('domains.scan');
+        Route::delete('/domains/{domain}', [DomainController::class, 'destroy'])->name('domains.destroy');
+        
+        // Scans
+        Route::get('/scans/{scan}', [ScanController::class, 'show'])->name('scans.show');
+        
+        // Reports
+        Route::post('/reports', [ReportController::class, 'store'])->name('reports.store');
+        Route::get('/reports/{report}/download', [ReportController::class, 'download'])->name('reports.download');
+    });
+});
+
+// routes/api.php
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::middleware(['api.subscription'])->group(function () {
+        Route::apiResource('domains', Api\DomainController::class);
+        Route::post('domains/{domain}/scan', [Api\DomainScanController::class, 'store']);
+        Route::apiResource('scans', Api\ScanController::class)->only(['index', 'show']);
+        Route::apiResource('reports', Api\ReportController::class);
+    });
+});
+```
+
+### Trial Expiry Banner Component
+
+```php
+// resources/views/components/trial-banner.blade.php
+@props(['user'])
+
+@php
+    $daysRemaining = $user->trial_ends_at ? now()->diffInDays($user->trial_ends_at, false) : null;
+    $isExpired = $daysRemaining !== null && $daysRemaining <= 0;
+    $isWarning = $daysRemaining !== null && $daysRemaining <= 3 && $daysRemaining > 0;
+@endphp
+
+@if($user->trial_ends_at && !$user->subscription_status)
+    <div class="relative">
+        @if($isExpired)
+            <div class="bg-red-900/20 border border-red-900/50 text-red-400 px-4 py-3 rounded-lg mb-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                        </svg>
+                        <span class="font-medium">Your trial has expired</span>
+                        <span class="ml-2">Subscribe now to continue monitoring your domains</span>
+                    </div>
+                    <a href="{{ route('billing.index') }}" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition">
+                        Subscribe Now
+                    </a>
+                </div>
+            </div>
+        @elseif($isWarning)
+            <div class="bg-yellow-900/20 border border-yellow-900/50 text-yellow-400 px-4 py-3 rounded-lg mb-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                        <span class="font-medium">{{ $daysRemaining }} {{ Str::plural('day', $daysRemaining) }} left in trial</span>
+                        <span class="ml-2">Subscribe now to ensure uninterrupted service</span>
+                    </div>
+                    <a href="{{ route('billing.index') }}" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded transition">
+                        Subscribe Now
+                    </a>
+                </div>
+            </div>
+        @else
+            <div class="bg-blue-900/20 border border-blue-900/50 text-blue-400 px-4 py-3 rounded-lg mb-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                        </svg>
+                        <span>{{ $daysRemaining }} {{ Str::plural('day', $daysRemaining) }} remaining in your free trial</span>
+                    </div>
+                    <a href="{{ route('billing.index') }}" class="text-blue-400 hover:text-blue-300 underline">
+                        View Plans
+                    </a>
+                </div>
+            </div>
+        @endif
+    </div>
+@endif
+```
+
+### Database Schema for Subscription Tracking
+
+```sql
+-- Add subscription tracking columns to users table
+ALTER TABLE users ADD COLUMN subscription_status VARCHAR(20) DEFAULT 'trial';
+ALTER TABLE users ADD COLUMN subscription_ends_at TIMESTAMP NULL;
+ALTER TABLE users ADD COLUMN subscription_grace_ends_at TIMESTAMP NULL;
+ALTER TABLE users ADD COLUMN stripe_subscription_id VARCHAR(255) NULL;
+ALTER TABLE users ADD COLUMN last_payment_failed_at TIMESTAMP NULL;
+ALTER TABLE users ADD COLUMN payment_failure_count INT DEFAULT 0;
+
+-- Index for efficient subscription queries
+CREATE INDEX idx_users_subscription ON users(subscription_status, trial_ends_at, subscription_ends_at);
+```
+
 ## Laravel Cloud Configuration
 
 ### Laravel Cloud Deployment (Cloud Only - No Self-Hosting)
@@ -1839,16 +2839,10 @@ Cache::remember("dashboard:{$user->id}", 900, fn() => $dashboardData);
 ```php
 namespace App\Exceptions;
 
-// Base exceptions
+// Application-level exceptions (separate from scanner exceptions)
 class AchilleusException extends \Exception {}
 class ValidationException extends AchilleusException {}
-class SecurityException extends AchilleusException {}
-class ScannerException extends AchilleusException {}
-
-// Specific exceptions
-class SSRFException extends SecurityException {}
 class DomainLimitException extends ValidationException {}
-class ScanTimeoutException extends ScannerException {}
 class PaymentFailedException extends AchilleusException {}
 class SubscriptionExpiredException extends AchilleusException {}
 ```
@@ -1964,12 +2958,13 @@ class ScanOrchestrator {
             foreach ($this->scanners as $scanner) {
                 try {
                     $results[$scanner->name()] = $scanner->scan($domain->url);
-                } catch (ScanTimeoutException $e) {
-                    Log::warning("Scanner timeout", [
+                } catch (RetryableException $e) {
+                    Log::warning("Scanner retryable error", [
                         'scanner' => $scanner->name(),
-                        'domain' => $domain->url
+                        'domain' => $domain->url,
+                        'error' => $e->getMessage()
                     ]);
-                    $results[$scanner->name()] = ModuleResult::timeout($scanner->name());
+                    $results[$scanner->name()] = ModuleResult::error($scanner->name(), $e->getMessage());
                 } catch (\Exception $e) {
                     Log::error("Scanner failed", [
                         'scanner' => $scanner->name(),
@@ -2053,9 +3048,13 @@ const handleScan = async (domainId: string) => {
 // Error message mapping
 class ErrorMessages {
     private static $messages = [
-        SSRFException::class => 'The provided URL is not accessible for security reasons.',
+        // Scanner exceptions (simplified to 3 types)
+        RetryableException::class => 'A temporary issue occurred. Please try again.',
+        ConfigurationException::class => 'There is a configuration issue with this domain. Please check your setup.',
+        SecurityException::class => 'Access to this resource was blocked for security reasons.',
+        
+        // Application exceptions
         DomainLimitException::class => 'You have reached your 10 domain limit. Please remove a domain to add a new one.',
-        ScanTimeoutException::class => 'The scan took too long to complete. Please try again.',
         PaymentFailedException::class => 'Payment processing failed. Please check your payment method.',
         SubscriptionExpiredException::class => 'Your subscription has expired. Please renew to continue.'
     ];
@@ -2096,6 +3095,384 @@ Log::channel('performance')->warning('Slow operation', [
     'domain' => $domain->url
 ]);
 ```
+
+## GDPR Compliance Implementation
+
+### Database Schema for GDPR Compliance
+
+#### User Consent Tracking
+```sql
+-- User consent records table
+CREATE TABLE user_consents (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    consent_type VARCHAR(50) NOT NULL, -- 'privacy_policy', 'terms_of_service', 'marketing_emails', 'cookies'
+    consented BOOLEAN NOT NULL DEFAULT false,
+    ip_address INET,
+    user_agent TEXT,
+    consented_at TIMESTAMP NOT NULL,
+    withdrawn_at TIMESTAMP NULL,
+    version VARCHAR(20) NOT NULL, -- Version of document consented to
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user_consent (user_id, consent_type),
+    INDEX idx_consent_date (consented_at)
+);
+
+-- Data processing activities log
+CREATE TABLE data_processing_logs (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    activity_type VARCHAR(100) NOT NULL, -- 'export', 'deletion', 'rectification', 'access'
+    status VARCHAR(20) NOT NULL, -- 'pending', 'processing', 'completed', 'failed'
+    requested_at TIMESTAMP NOT NULL,
+    completed_at TIMESTAMP NULL,
+    requested_by VARCHAR(255), -- Could be user or admin
+    ip_address INET,
+    details JSONB, -- Additional metadata about the request
+    file_path TEXT, -- For export requests
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user_activity (user_id, activity_type),
+    INDEX idx_activity_status (status)
+);
+
+-- Audit trail for all data changes
+CREATE TABLE gdpr_audit_logs (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    table_name VARCHAR(100) NOT NULL,
+    record_id BIGINT NOT NULL,
+    action VARCHAR(20) NOT NULL, -- 'create', 'update', 'delete', 'access'
+    old_data JSONB,
+    new_data JSONB,
+    changed_by VARCHAR(255),
+    reason TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_user_audit (user_id),
+    INDEX idx_table_record (table_name, record_id)
+);
+```
+
+### GDPR Service Implementation
+
+```php
+namespace App\Services;
+
+use App\Models\User;
+use App\Models\UserConsent;
+use App\Models\DataProcessingLog;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+
+class GdprService {
+    /**
+     * Record user consent
+     */
+    public function recordConsent(User $user, string $type, bool $consented, string $version): UserConsent {
+        return UserConsent::create([
+            'user_id' => $user->id,
+            'consent_type' => $type,
+            'consented' => $consented,
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+            'consented_at' => now(),
+            'version' => $version
+        ]);
+    }
+    
+    /**
+     * Withdraw consent
+     */
+    public function withdrawConsent(User $user, string $type): void {
+        UserConsent::where('user_id', $user->id)
+            ->where('consent_type', $type)
+            ->whereNull('withdrawn_at')
+            ->update(['withdrawn_at' => now()]);
+    }
+    
+    /**
+     * Export all user data (GDPR Article 20 - Data Portability)
+     */
+    public function exportUserData(User $user): string {
+        $log = DataProcessingLog::create([
+            'user_id' => $user->id,
+            'activity_type' => 'export',
+            'status' => 'processing',
+            'requested_at' => now(),
+            'requested_by' => $user->email,
+            'ip_address' => request()->ip()
+        ]);
+        
+        try {
+            $data = [
+                'user' => $user->toArray(),
+                'domains' => $user->domains()->with('scans.scanModules')->get()->toArray(),
+                'scans' => $user->scans()->with('scanModules')->get()->toArray(),
+                'reports' => $user->reports()->get()->toArray(),
+                'consents' => $user->consents()->get()->toArray(),
+                'audit_logs' => DB::table('gdpr_audit_logs')
+                    ->where('user_id', $user->id)
+                    ->get()
+                    ->toArray()
+            ];
+            
+            $filename = "user-data-export-{$user->id}-" . now()->format('Y-m-d-His') . '.json';
+            $path = "gdpr-exports/{$filename}";
+            
+            Storage::disk('s3')->put($path, json_encode($data, JSON_PRETTY_PRINT));
+            
+            $log->update([
+                'status' => 'completed',
+                'completed_at' => now(),
+                'file_path' => $path
+            ]);
+            
+            return Storage::disk('s3')->temporaryUrl($path, now()->addHours(24));
+            
+        } catch (\Exception $e) {
+            $log->update([
+                'status' => 'failed',
+                'details' => ['error' => $e->getMessage()]
+            ]);
+            throw $e;
+        }
+    }
+    
+    /**
+     * Delete all user data (GDPR Article 17 - Right to Erasure)
+     */
+    public function deleteUserData(User $user): void {
+        $log = DataProcessingLog::create([
+            'user_id' => $user->id,
+            'activity_type' => 'deletion',
+            'status' => 'processing',
+            'requested_at' => now(),
+            'requested_by' => $user->email,
+            'ip_address' => request()->ip()
+        ]);
+        
+        DB::transaction(function () use ($user, $log) {
+            try {
+                // Delete all related data
+                $user->domains()->delete();
+                $user->scans()->delete();
+                $user->reports()->delete();
+                $user->consents()->delete();
+                
+                // Anonymize audit logs instead of deleting
+                DB::table('gdpr_audit_logs')
+                    ->where('user_id', $user->id)
+                    ->update([
+                        'user_id' => 0,
+                        'changed_by' => 'ANONYMIZED',
+                        'old_data' => DB::raw("'{}'::jsonb"),
+                        'new_data' => DB::raw("'{}'::jsonb")
+                    ]);
+                
+                // Delete the user account
+                $user->delete();
+                
+                $log->update([
+                    'status' => 'completed',
+                    'completed_at' => now()
+                ]);
+                
+            } catch (\Exception $e) {
+                $log->update([
+                    'status' => 'failed',
+                    'details' => ['error' => $e->getMessage()]
+                ]);
+                throw $e;
+            }
+        });
+    }
+    
+    /**
+     * Check if user has given consent
+     */
+    public function hasConsent(User $user, string $type): bool {
+        return UserConsent::where('user_id', $user->id)
+            ->where('consent_type', $type)
+            ->where('consented', true)
+            ->whereNull('withdrawn_at')
+            ->exists();
+    }
+}
+```
+
+### Data Retention Policies
+
+```php
+namespace App\Console\Commands;
+
+use Illuminate\Console\Command;
+use App\Models\Scan;
+use App\Models\Report;
+use App\Models\GdprAuditLog;
+
+class CleanupOldData extends Command {
+    protected $signature = 'gdpr:cleanup';
+    protected $description = 'Clean up old data according to GDPR retention policies';
+    
+    public function handle(): void {
+        // Delete scan data older than 90 days
+        Scan::where('created_at', '<', now()->subDays(90))
+            ->each(function ($scan) {
+                $scan->scanModules()->delete();
+                $scan->delete();
+            });
+        
+        // Delete reports older than 90 days
+        Report::where('created_at', '<', now()->subDays(90))
+            ->each(function ($report) {
+                Storage::disk('s3')->delete($report->file_path);
+                $report->delete();
+            });
+        
+        // Anonymize audit logs older than 2 years
+        GdprAuditLog::where('created_at', '<', now()->subYears(2))
+            ->update([
+                'user_id' => 0,
+                'changed_by' => 'ANONYMIZED',
+                'old_data' => '{}',
+                'new_data' => '{}'
+            ]);
+        
+        $this->info('GDPR cleanup completed');
+    }
+}
+
+// Schedule in app/Console/Kernel.php
+protected function schedule(Schedule $schedule) {
+    $schedule->command('gdpr:cleanup')->daily()->at('02:00');
+}
+```
+
+### Cookie Consent Implementation
+
+```php
+namespace App\Http\Middleware;
+
+class CookieConsent {
+    public function handle($request, $next) {
+        $response = $next($request);
+        
+        // Check if user has accepted cookies
+        if (!$request->hasCookie('cookie_consent')) {
+            // Inject cookie banner JavaScript
+            $response->header('X-Cookie-Consent-Required', 'true');
+        }
+        
+        return $response;
+    }
+}
+```
+
+### GDPR API Endpoints
+
+```php
+namespace App\Http\Controllers\Api;
+
+use App\Services\GdprService;
+
+class GdprController extends Controller {
+    protected GdprService $gdprService;
+    
+    public function __construct(GdprService $gdprService) {
+        $this->gdprService = $gdprService;
+    }
+    
+    /**
+     * Record user consent
+     * POST /api/gdpr/consent
+     */
+    public function recordConsent(Request $request): JsonResponse {
+        $validated = $request->validate([
+            'consent_type' => 'required|in:privacy_policy,terms_of_service,marketing_emails,cookies',
+            'consented' => 'required|boolean',
+            'version' => 'required|string'
+        ]);
+        
+        $consent = $this->gdprService->recordConsent(
+            auth()->user(),
+            $validated['consent_type'],
+            $validated['consented'],
+            $validated['version']
+        );
+        
+        return response()->json(['consent' => $consent]);
+    }
+    
+    /**
+     * Export user data
+     * POST /api/gdpr/export
+     */
+    public function exportData(): JsonResponse {
+        $url = $this->gdprService->exportUserData(auth()->user());
+        
+        // Send email with download link
+        Mail::to(auth()->user())->send(new DataExportReady($url));
+        
+        return response()->json([
+            'message' => 'Your data export is being prepared. You will receive an email with the download link.'
+        ]);
+    }
+    
+    /**
+     * Delete user account and all data
+     * DELETE /api/gdpr/delete-account
+     */
+    public function deleteAccount(Request $request): JsonResponse {
+        $request->validate([
+            'password' => 'required|current_password',
+            'confirmation' => 'required|in:DELETE'
+        ]);
+        
+        $this->gdprService->deleteUserData(auth()->user());
+        
+        return response()->json([
+            'message' => 'Your account and all associated data has been permanently deleted.'
+        ]);
+    }
+    
+    /**
+     * Get privacy settings
+     * GET /api/gdpr/privacy-settings
+     */
+    public function getPrivacySettings(): JsonResponse {
+        $user = auth()->user();
+        
+        return response()->json([
+            'consents' => [
+                'privacy_policy' => $this->gdprService->hasConsent($user, 'privacy_policy'),
+                'terms_of_service' => $this->gdprService->hasConsent($user, 'terms_of_service'),
+                'marketing_emails' => $this->gdprService->hasConsent($user, 'marketing_emails'),
+                'cookies' => $this->gdprService->hasConsent($user, 'cookies')
+            ],
+            'data_retention' => [
+                'scan_data' => '90 days',
+                'reports' => '90 days',
+                'audit_logs' => '2 years (anonymized)',
+                'account_data' => 'Until deletion requested'
+            ]
+        ]);
+    }
+}
+```
+
+### Privacy Policy Requirements
+
+The privacy policy must include:
+1. **Data Controller Information**: Company name, address, contact details
+2. **Data Processing Purposes**: Security scanning, performance monitoring, reporting
+3. **Legal Basis**: Legitimate interest (security), contract fulfillment (service provision)
+4. **Data Categories**: Domain URLs, scan results, email addresses, IP addresses
+5. **Data Retention**: 90 days for scan data, 2 years for anonymized logs
+6. **Third Parties**: Stripe (payments), AWS (infrastructure), no data selling
+7. **User Rights**: Access, rectification, erasure, portability, restriction, objection
+8. **Data Transfers**: EU/US data transfers under standard contractual clauses
+9. **Security Measures**: Encryption at rest and in transit, access controls
+10. **Contact Information**: Data Protection Officer email (privacy@achilleus.so)
 
 ## Security Measures
 

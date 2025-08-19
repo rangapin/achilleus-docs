@@ -716,6 +716,80 @@ This design system ensures consistency across all pages while maintaining the pr
 3. Retry option provided
 4. Support contact if persistent
 
+### Trial Expiry & Subscription Enforcement
+
+#### Trial Period Lifecycle
+1. **Registration**: 14-day trial starts automatically
+2. **Day 1-11**: Full access to all features
+3. **Day 12-14**: Warning banner appears (3 days remaining)
+4. **Day 14**: Critical warning (trial ends today)
+5. **Day 15+**: Trial expired, features restricted
+
+#### Trial Expiry User Flow
+1. **User with Expired Trial Attempts Scan**:
+   - Click "Scan Now" button
+   - Redirected to billing page
+   - Error message: "Your trial has expired. Please subscribe to continue."
+   - Subscribe button prominently displayed
+   - Trial usage statistics shown
+
+2. **User with Expired Trial Views Dashboard**:
+   - Dashboard accessible (read-only)
+   - All action buttons disabled
+   - Red banner: "Trial Expired - Subscribe Now"
+   - Can view existing domains and past scans
+   - Cannot add domains or run new scans
+
+3. **User with Expired Trial Attempts Report Generation**:
+   - Report button disabled
+   - Tooltip: "Subscription required"
+   - Clicking redirects to billing page
+   - Previous reports still downloadable
+
+#### Grace Period for Payment Failures
+1. **Initial Payment Failure**:
+   - 3-day grace period activated
+   - Yellow warning banner appears
+   - Email notification sent
+   - Full access maintained
+
+2. **During Grace Period**:
+   - Daily reminder emails
+   - Warning banner on all pages
+   - "Update Payment Method" CTA
+   - Countdown timer shown
+
+3. **Grace Period Expired**:
+   - Access restricted like expired trial
+   - Red banner: "Subscription Suspended"
+   - All scanning features disabled
+   - Existing data remains accessible
+
+#### Subscription States & Access Levels
+
+| State | Dashboard | View Domains | Add Domains | Run Scans | Generate Reports | Billing |
+|-------|-----------|--------------|-------------|-----------|------------------|---------|
+| Trial Active | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Trial Expired | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
+| Active Subscription | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Grace Period | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Suspended | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
+| Cancelled (Active) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Cancelled (Expired) | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
+
+#### Reactivation Flow
+1. **Expired Trial User Subscribes**:
+   - Immediate access restoration
+   - All features unlocked
+   - Trial data preserved
+   - Welcome back email sent
+
+2. **Suspended User Updates Payment**:
+   - Payment processed immediately
+   - Access restored within 1 minute
+   - Grace period counter reset
+   - Confirmation email sent
+
 ## Product Roadmap
 
 ### Current MVP (Launched)
@@ -834,6 +908,124 @@ const SCAN_LIMIT = 'unlimited';
 - Localhost blocked
 - URL paths ignored (normalized to domain)
 - Duplicate domains prevented per user
+
+## GDPR Compliance & Privacy Features
+
+### User Privacy Controls
+
+#### Privacy Dashboard
+A dedicated section in user settings for managing privacy preferences:
+- **Data Export**: One-click JSON export of all user data
+- **Account Deletion**: Permanent deletion with confirmation
+- **Consent Management**: Toggle marketing emails, analytics tracking
+- **Data Retention Info**: Clear display of retention policies
+
+#### Cookie Consent Banner
+Displayed on first visit and accessible via footer link:
+```
+This site uses essential cookies for authentication and security scanning.
+Optional cookies help us improve our service.
+[Essential Only] [Accept All] [Customize]
+```
+
+### GDPR User Flows
+
+#### 1. Registration Flow with Consent
+```
+1. User enters email and password
+2. Consent checkboxes displayed (not pre-checked):
+   □ I accept the Terms of Service (required)
+   □ I accept the Privacy Policy (required)
+   □ Send me product updates and security tips (optional)
+3. Registration blocked until required consents given
+4. Consent records stored with timestamp and version
+```
+
+#### 2. Data Export Flow
+```
+1. User navigates to Settings → Privacy
+2. Clicks "Export My Data"
+3. System generates JSON file with all user data
+4. Download link sent via email (expires in 24 hours)
+5. Activity logged in data processing log
+```
+
+#### 3. Account Deletion Flow
+```
+1. User navigates to Settings → Privacy
+2. Clicks "Delete My Account"
+3. Modal appears with warnings:
+   - All domains and scan history will be deleted
+   - This action cannot be undone
+   - Active subscription will be cancelled
+4. User must type "DELETE" and enter password
+5. Account marked for deletion, processed within 24 hours
+6. Confirmation email sent
+```
+
+#### 4. Consent Withdrawal Flow
+```
+1. User navigates to Settings → Privacy
+2. Unchecks consent toggles (e.g., marketing emails)
+3. System immediately stops relevant processing
+4. Withdrawal recorded with timestamp
+5. User can re-consent at any time
+```
+
+### Privacy Policy Requirements
+
+The privacy policy page (`/privacy`) must include:
+
+#### Data Collection
+- **Account Data**: Email, password (hashed), IP addresses
+- **Domain Data**: URLs monitored, scan configurations
+- **Scan Results**: Security scores, vulnerabilities found
+- **Usage Data**: Login times, feature usage (if consented)
+- **Payment Data**: Processed by Stripe, not stored locally
+
+#### Data Usage
+- **Primary Purpose**: Providing security scanning services
+- **Secondary**: Service improvement (aggregated, anonymized)
+- **Marketing**: Only with explicit consent
+- **Legal**: Compliance with laws and regulations
+
+#### Data Sharing
+- **No Selling**: User data is never sold
+- **Service Providers**: Stripe (payments), AWS (infrastructure)
+- **Legal Requirements**: Only when legally required
+- **Business Transfers**: In case of merger/acquisition
+
+#### User Rights (GDPR Articles 15-22)
+- **Access**: Download all your data anytime
+- **Rectification**: Update incorrect information
+- **Erasure**: Delete account and all data
+- **Portability**: Export data in machine-readable format
+- **Restriction**: Limit how we process your data
+- **Objection**: Opt-out of certain processing
+
+#### Data Security
+- **Encryption**: TLS 1.3 in transit, AES-256 at rest
+- **Access Control**: Role-based, principle of least privilege
+- **Monitoring**: 24/7 security monitoring
+- **Incident Response**: Notification within 72 hours
+
+#### Contact Information
+- **Data Controller**: Achilleus Security Ltd.
+- **DPO Email**: privacy@achilleus.so
+- **Support**: security@achilleus.so
+- **Supervisory Authority**: [Relevant EU authority]
+
+### Terms of Service Requirements
+
+The terms page (`/terms`) must include:
+- Service description and limitations
+- Acceptable use policy
+- Payment terms and refund policy
+- Liability limitations
+- Intellectual property rights
+- Termination conditions
+- Governing law and disputes
+- Changes to terms notification
 
 ## What This Project Does NOT Include
 

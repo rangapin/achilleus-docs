@@ -10,6 +10,10 @@ Build a security monitoring SaaS from scratch using Laravel 12 with React 19 sta
 - Laravel Cloud: https://cloud.laravel.com/
 - Shadcn/ui: https://ui.shadcn.com/
 - Laravel Reverb: https://reverb.laravel.com/
+- Laravel Cashier: https://laravel.com/docs/12.x/billing
+- Laravel Pennant: https://laravel.com/docs/12.x/pennant
+- Laravel Precognition: https://laravel.com/docs/12.x/precognition
+- Laravel Socialite: https://laravel.com/docs/12.x/socialite
 
 **Target Timeline**: 21 days from empty repository to production MVP
 **Development Approach**: Test-Driven Development (TDD) with security-first implementation
@@ -23,6 +27,48 @@ Build a security monitoring SaaS from scratch using Laravel 12 with React 19 sta
 - **Progressive Enhancement**: Build core functionality first, polish later
 - **Database-Driven UI**: All UI components must be backed by real data
 - **SSRF Protection**: All external requests must be validated
+
+## AI-Enhanced Development Workflow with Laravel Boost
+
+### Boost-Powered Development Process
+
+With Laravel Boost active, AI assistants have deep context about your project:
+
+```bash
+# Start Boost MCP Server (run once per session)
+php artisan boost:mcp
+
+# AI can now access:
+# - Your actual database schema and data
+# - All routes, middleware, and controllers
+# - Configuration values and environment settings
+# - Error logs and debugging information
+# - Laravel 12 documentation specific to your versions
+```
+
+### Enhanced TDD Workflow with Boost
+
+```bash
+# 1. ANALYZE - AI inspects existing code patterns
+boost:tinker "glob(app_path('Services/Scanners/*.php'))"
+boost:query "SELECT DISTINCT module FROM scan_modules"
+
+# 2. PLAN - AI understands actual requirements
+boost:docs "Laravel 12 testing"
+boost:routes --name=domains
+
+# 3. TEST - AI writes tests using real fixtures
+boost:tinker "Domain::factory()->make()->toArray()"
+php artisan make:test DomainScannerTest
+
+# 4. CODE - AI implements following your patterns
+boost:config app.timezone
+boost:logs --tail=20
+
+# 5. VERIFY - AI checks against actual data
+boost:query "SELECT * FROM scans WHERE status = 'failed'"
+php artisan test --parallel
+```
 
 ## Development Workflow
 
@@ -68,28 +114,40 @@ achilleus-verify [phase].[subtask] # Run tests, check performance
 - Confirm TypeScript configuration is present
 - Test default authentication pages work
 
-#### 0.2 Package Installation  
+#### 0.2 Laravel Boost Setup (AI Development Assistant)
+- Install Laravel Boost (composer require laravel/boost --dev)
+- Run boost:install to initialize AI guidelines
+- Configure .ai/guidelines/ directory structure
+- Test MCP server with php artisan boost:mcp
+- Verify Boost tools work (tinker, query, docs, logs)
+- Create custom Achilleus guidelines in .ai/guidelines/
+
+#### 0.3 Package Installation  
+- Install Laravel Cashier for Stripe billing (laravel/cashier)
+- Install Laravel Pennant for feature flags (laravel/pennant)
+- Install Laravel Precognition for live validation (laravel/precognition)
+- Install Laravel Socialite for OAuth (laravel/socialite)
 - Install PDF generation (barryvdh/laravel-dompdf)
-- Install Stripe integration (stripe/stripe-php)
 - Install development tools (laravel/pint, pestphp/pest)
 - Install Playwright for E2E testing
-- Run playwright setup
+- Run Cashier migrations (php artisan migrate:cashier)
+- Run Pennant migrations (php artisan migrate:pennant)
 
-#### 0.3 Shadcn/ui Configuration
+#### 0.4 Shadcn/ui Configuration
 - Initialize Shadcn/ui with dark theme
 - Install core components (button, card, form, input, select, badge, alert)
 - Install additional components (dialog, table, tabs, progress, tooltip)
 - Verify dark theme classes in tailwind.config.js
 - Test component rendering
 
-#### 0.4 Project Structure Setup
+#### 0.5 Project Structure Setup
 - Create marketing directory for landing page
 - Download and configure Salient template
 - Create scanner directory structure (app/Contracts/Scanners, app/Data, app/Support)
 - Set up testing directories (Unit, Feature, E2E)
 - Configure .env.example with all required variables
 
-#### 0.5 Version Control Setup
+#### 0.6 Version Control Setup
 - Verify git repository is initialized
 - Create comprehensive .gitignore
 - Make initial commit with all setup
@@ -130,11 +188,13 @@ achilleus-verify [phase].[subtask] # Run tests, check performance
 ### Subtasks
 
 #### 1.1 Database Schema
-- Users table with trial_ends_at, stripe_customer_id, subscription_status
+- Users table with trial_ends_at, stripe_customer_id, subscription_status, provider fields for OAuth
 - Domains table with url, email_mode, last_scan_score, is_active
 - Scans table with status, total_score, grade, timestamps
 - Scan_modules table with module type, score, status, raw JSONB data
 - Reports table with filename, file_path, file_size
+- Subscription_items table for Laravel Cashier
+- Features table for Laravel Pennant feature flags
 
 #### 1.2 Models & Relationships
 - User model with domains(), scans(), reports() relationships
@@ -143,26 +203,41 @@ achilleus-verify [phase].[subtask] # Run tests, check performance
 - ScanModule model with scan() relationship
 - Model factories for all models
 
-#### 1.3 Security Infrastructure (NetworkGuard)
+#### 1.3 Laravel Package Configuration
+- Configure Laravel Cashier with Stripe keys and webhook endpoint
+- Set up Laravel Socialite providers (GitHub, Google) with OAuth credentials
+- Initialize Laravel Pennant with feature flag definitions in AppServiceProvider
+- Configure Laravel Precognition middleware for form validation endpoints
+- Create Billable trait configuration on User model for Cashier
+
+#### 1.4 Security Infrastructure (NetworkGuard)
 - NetworkGuard class for SSRF protection
 - Block localhost (127.0.0.1, ::1)
 - Block private IPs (192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12)
 - Block cloud metadata endpoints (169.254.169.254)
-- Custom exception classes (SSRFException, TimeoutException, RateLimitException)
+- Custom exception classes (RetryableException, ConfigurationException, SecurityException)
 
-#### 1.4 Authentication Enhancement
+#### 1.5 Authentication Enhancement
 - Registration sets trial_ends_at to 14 days from now
 - Trial banner component for authenticated users
 - Shadcn/ui components in auth pages
 - Subscription status tracking
 - Trial expiry calculations
 
-#### 1.5 Configuration Setup
+#### 1.5 GDPR Database Schema
+- Create user_consents table for tracking consent records
+- Create data_processing_logs table for GDPR requests
+- Create gdpr_audit_logs table for data change tracking
+- Add indexes for efficient querying
+- Set up foreign key constraints with CASCADE deletes
+
+#### 1.6 Configuration Setup
 - Scoring config with weights (SSL: 40%, Headers: 30%, DNS: 30%)
 - Grade thresholds (A+: 95+, A: 90+, B+: 85+, B: 80+, C: 70+, D: 60+, F: <60)
 - Domain limits (max 10 per user)
 - Rate limits (10 scans/minute per user)
 - Environment variables for all services
+- GDPR retention periods (90 days for scans, 2 years for audit logs)
 
 ---
 
@@ -265,7 +340,15 @@ achilleus-verify [phase].[subtask] # Run tests, check performance
 
 ### Subtasks
 
-#### 3.1 Scan Job Implementation (RunDomainScan)
+#### 3.1 OAuth Authentication (Laravel Socialite)
+- Configure GitHub OAuth application
+- Configure Google OAuth application  
+- Implement SocialAuthController with redirect/callback methods
+- Handle account linking for existing emails
+- Set trial_ends_at for new OAuth users
+- Add "Sign in with GitHub/Google" buttons to login page
+
+#### 3.2 Scan Job Implementation (RunDomainScan)
 - Job class with proper timeout (120 seconds)
 - Retry configuration (3 attempts, exponential backoff)
 - Scan status updates (pending → running → completed/failed)
@@ -273,7 +356,7 @@ achilleus-verify [phase].[subtask] # Run tests, check performance
 - Error message capture and logging
 - Domain last_scan_score update
 
-#### 3.2 Scan Orchestrator Service
+#### 3.3 Scan Orchestrator Service
 - Scanner dependency injection
 - Sequential scanner execution with error isolation
 - Individual scanner failure handling
@@ -336,40 +419,56 @@ achilleus-verify [phase].[subtask] # Run tests, check performance
 
 ### Subtasks
 
-#### 4.1 Domain Management API
+#### 4.1 Live Form Validation (Laravel Precognition)
+- Configure HandlePrecognitiveRequests middleware
+- Add Precognition to DomainController store/update methods
+- Implement StoreDomainRequest with complex validation rules
+- Add domain reachability validation
+- Configure frontend with laravel-precognition-react-inertia
+
+#### 4.2 Domain Management API
 - Domain model with URL normalization (lowercase, remove protocol/www/trailing slash)
 - Domain scopes (active, forUser) and computed attributes
 - StoreDomainRequest with HTTPS-only and SSRF validation
 - DomainController with full CRUD operations
 - Domain policy for authorization
 
-#### 4.2 Scan Management API
+#### 4.3 Scan Management API
 - DomainScanController for triggering scans
 - Single domain scan endpoint
 - Bulk scan all domains endpoint
 - Scan status and history endpoints
 - Real-time scan progress via Reverb preparation
 
-#### 4.3 Dashboard API
+#### 4.4 Dashboard API
 - DashboardController with metrics endpoints
 - Average security score calculation
 - Active domains count and critical issues
 - Recent scan activity endpoint
 - Trend data for last 7/30/90 days
 
-#### 4.4 Reports API
+#### 4.5 Reports API
 - ReportController for PDF generation
 - Report generation job dispatch
 - Report download with signed URLs
 - Report history and management
 - Generation limits (10/day) enforcement
 
-#### 4.5 User & Billing API
+#### 4.6 User & Billing API
 - Profile update endpoints
 - Subscription status endpoint
 - Trial days remaining calculation
 - Payment method management preparation
 - Billing history endpoint preparation
+
+#### 4.7 GDPR Compliance API
+- GdprController with consent management endpoints
+- POST /api/gdpr/consent - Record user consent
+- POST /api/gdpr/export - Export user data
+- DELETE /api/gdpr/delete-account - Delete user account
+- GET /api/gdpr/privacy-settings - Get privacy preferences
+- Implement GdprService for data processing
+- Add data retention cleanup command
 
 ---
 
@@ -456,7 +555,17 @@ achilleus-verify [phase].[subtask] # Run tests, check performance
 - Account deletion option
 - API keys section (future enhancement)
 
-#### 5.8 Empty States & Error Handling
+#### 5.8 Privacy & GDPR Settings
+- Privacy dashboard in user settings
+- Cookie consent banner component
+- Data export button with email delivery
+- Account deletion with confirmation modal
+- Consent management toggles (marketing, analytics)
+- Data retention information display
+- Privacy policy and terms of service pages
+- Consent checkboxes in registration flow
+
+#### 5.9 Empty States & Error Handling
 - Empty states for all lists with helpful CTAs
 - Loading skeletons for all async operations
 - Error boundaries with user-friendly messages
@@ -465,21 +574,21 @@ achilleus-verify [phase].[subtask] # Run tests, check performance
 
 ---
 
-## Phase 6: Billing & Stripe Integration (Days 14-15)
+## Phase 6: Billing & Subscription with Laravel Cashier (Days 14-15)
 
 ### ✅ DO
-- Use Stripe's direct API (no Cashier)
-- Verify webhook signatures
-- Handle all subscription states
+- Use Laravel Cashier for all Stripe operations
+- Configure webhook endpoint for Stripe events
+- Handle all subscription lifecycle states
 - Test with Stripe test mode
-- Implement idempotency
+- Implement proper trial handling
 
 ### ❌ DON'T
 - Store payment data locally
 - Skip webhook verification
 - Ignore subscription states
 - Use production keys in development
-- Allow access after expiry
+- Allow access after trial/subscription expiry
 
 ### What to Test
 - Subscription creation flow
@@ -496,26 +605,26 @@ achilleus-verify [phase].[subtask] # Run tests, check performance
 
 ### Subtasks
 
-#### 6.1 Stripe Service (Direct API)
-- Customer creation method
-- Subscription creation with trial
-- Payment method attachment
-- Subscription cancellation
-- Invoice retrieval
+#### 6.1 Laravel Cashier Configuration
+- Install and configure Laravel Cashier
+- Add Billable trait to User model
+- Run Cashier migrations for subscription tables
+- Configure Stripe keys and webhook secret
+- Set up $27/month price in Stripe dashboard
 
-#### 6.2 Subscription Controllers
-- SubscriptionController for management
-- CheckoutController for payment flow
+#### 6.2 Subscription Management with Cashier
+- BillingService with createSubscription, swapPlan, cancel methods
+- SubscriptionController using Cashier methods
+- Payment method setup with Stripe Elements
 - Trial to paid conversion handling
-- Payment method update endpoint
-- Cancellation endpoint
+- Subscription portal integration
 
-#### 6.3 Webhook Processing
-- StripeWebhookController
-- Signature verification
-- Event handlers (subscription.created, invoice.payment_succeeded, etc.)
-- Idempotency handling
-- Webhook event logging
+#### 6.3 Webhook Processing with Cashier
+- Configure Cashier webhook route
+- Extend WebhookController for custom events
+- Handle subscription lifecycle events
+- Payment failure notifications
+- Grace period management
 
 #### 6.4 Billing UI
 - Billing/Index page
@@ -524,12 +633,47 @@ achilleus-verify [phase].[subtask] # Run tests, check performance
 - Billing history
 - Cancellation flow
 
-#### 6.5 Access Control
-- SubscriptionMiddleware
-- User helper methods (hasActiveSubscription, isInTrial)
-- Domain limit gates
-- Grace period handling
-- Trial expiry warnings
+#### 6.5 Trial & Subscription Enforcement
+- Create EnsureSubscriptionActive middleware
+- Create EnsureApiSubscriptionActive for API routes
+- Implement getSubscriptionStatus() method with all states
+- Add subscription_status column to users table
+- Add subscription_ends_at and grace_ends_at columns
+- Configure protected routes in web.php and api.php
+
+#### 6.6 Trial Expiry Components
+- Trial expiry banner component with 3 states (info/warning/expired)
+- Disabled button states for expired trials
+- Redirect logic to billing page on protected actions
+- Countdown timer for days remaining
+- Grace period warning banners
+- Payment failure notification system
+
+#### 6.7 Access Control Gates
+- User helper methods (hasActiveSubscription, isInTrial, isInGracePeriod)
+- Route protection for domains.store, domains.scan
+- Route protection for reports.store, reports.download
+- API endpoint protection with 402 Payment Required responses
+- Domain limit enforcement (10 domains max)
+- Scan rate limiting per subscription tier
+
+#### 6.8 Subscription State Handling
+- Trial active: Full access for 14 days
+- Trial expired: Read-only access, scanning disabled
+- Active subscription: Full access, no restrictions
+- Grace period: Full access with payment warnings
+- Suspended: Read-only like expired trial
+- Cancelled active: Full access until end date
+- Cancelled expired: Read-only access
+
+#### 6.9 Testing Subscription States
+- Test trial expiry after 14 days
+- Test scanning blocked for expired trials
+- Test billing page redirect on protected routes
+- Test grace period warnings and access
+- Test reactivation after payment update
+- Test subscription cancellation flow
+- Verify API returns 402 for expired trials
 
 ---
 
@@ -579,21 +723,40 @@ achilleus-verify [phase].[subtask] # Run tests, check performance
 - Secure storage with signed URLs
 - Report management UI completion
 
-#### 7.3 Performance Optimization
+#### 7.3 Feature Flags Implementation (Laravel Pennant)
+- Define feature flags in AppServiceProvider
+- Implement 'enhanced-scanners' flag for paid users
+- Add 'ai-insights' flag with gradual rollout
+- Create 'bulk-operations' flag for power users
+- Add 'api-access' flag for subscribed users
+- Integrate feature checks in scanner controllers
+- Add feature flag UI toggles in admin panel
+
+#### 7.4 Performance Optimization
 - Dashboard query optimization (N+1 prevention)
 - Frontend bundle size reduction
 - Image optimization and lazy loading
 - API response time improvements
 - Cache implementation for frequent queries
 
-#### 7.4 UI/UX Polish
+#### 7.5 UI/UX Polish
 - Consistent spacing and typography
 - Smooth transitions and animations
 - Form validation feedback improvements
 - Loading state refinements
 - Dark theme consistency check
 
-#### 7.5 Bug Fixes & Edge Cases
+#### 7.6 GDPR Compliance Testing
+- Test consent recording and withdrawal flows
+- Verify data export generates complete JSON
+- Test account deletion removes all user data
+- Verify audit logging captures all changes
+- Test data retention cleanup command
+- Verify cookie consent banner functionality
+- Test privacy settings API endpoints
+- Validate GDPR compliance for EU users
+
+#### 7.7 Bug Fixes & Edge Cases
 - Fix issues discovered during testing
 - Handle network timeout scenarios
 - Improve error messages

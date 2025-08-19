@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Achilleus** - Security monitoring SaaS for developers managing multiple websites  
 **Target**: Freelancers and small businesses needing affordable security monitoring  
 **Price**: $27/month for 10 domains with unlimited scans  
-**Stack**: Laravel 12 (with React starter kit) + React 19 + Shadcn/ui + Inertia.js + Laravel Reverb + Laravel Cloud
+**Stack**: Laravel 12 (with (https://laravel.com/docs/12.x/starter-kits) starter kit) + React 19 + Shadcn/ui + Inertia.js + Laravel Reverb + Laravel Cloud
 **Support**: security@achilleus.so (no automated email system in MVP)
 
 ## Key Resources
@@ -17,6 +17,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Laravel Cloud**: https://cloud.laravel.com/
 - **Shadcn/ui**: https://ui.shadcn.com/
 - **Laravel Reverb**: https://reverb.laravel.com/
+- **Laravel Cashier (Stripe)**: https://laravel.com/docs/12.x/billing
+- **Laravel Pennant**: https://laravel.com/docs/12.x/pennant
+- **Laravel Precognition**: https://laravel.com/docs/12.x/precognition
+- **Laravel Socialite**: https://laravel.com/docs/12.x/socialite
+- **Laravel Boost**: https://boost.laravel.com/ (AI development assistant)
 - **Landing Page**: Salient template from https://tailwindcss.com/plus/templates/salient  
 
 ## Documentation Structure
@@ -24,6 +29,79 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `technical.md` - System architecture, scanner implementation, database schema
 - `product.md` - Product specifications, UI mockups, business rules  
 - `execution.md` - Development phases, testing strategy, deployment plan
+
+## Laravel Boost Integration (AI-Powered Development)
+
+### What is Laravel Boost?
+Laravel Boost is an MCP (Model Context Protocol) server that supercharges AI-assisted development by providing deep project context and Laravel-specific knowledge to AI coding assistants. It enables AI to understand YOUR specific project, not just generic Laravel.
+
+### Boost Capabilities
+When Laravel Boost is active, AI assistants can:
+- **Run Tinker** - Execute PHP code in your project context
+- **Query Database** - Run actual queries to understand data structure
+- **Inspect Schema** - See your actual migrations and database design
+- **Search Docs** - Access version-specific Laravel 12 documentation
+- **Read Logs** - Debug issues by reading actual error logs
+- **Generate Tests** - Create tests following your project conventions
+- **Understand Routes** - See all your application routes and middleware
+- **Access Config** - Read your actual configuration values
+
+### Installation & Setup
+```bash
+# Install Laravel Boost (dev dependency)
+composer require laravel/boost --dev
+
+# Initialize Boost in your project
+php artisan boost:install
+
+# Start the MCP server for AI agents
+php artisan boost:mcp
+```
+
+### AI Guidelines Structure
+Boost automatically creates `.ai/` directory with:
+- `guidelines/` - Custom AI rules for your project
+- `claude.md` - Auto-generated from your guidelines
+- Version-specific Laravel 12 best practices
+- Achilleus-specific security requirements
+
+### Using Boost with AI Tools
+```bash
+# With Claude Code
+php artisan boost:mcp  # Boost provides context automatically
+
+# With Cursor IDE
+# Boost integrates via .cursorrules file
+
+# With GitHub Copilot
+# Boost provides context through .github/copilot-instructions.md
+```
+
+### Boost-Powered Development Workflow
+```bash
+# 1. AI can inspect your actual database
+boost:query "SELECT * FROM domains WHERE last_scan_score < 70"
+
+# 2. AI can run Tinker to test code
+boost:tinker "User::find(1)->domains()->count()"
+
+# 3. AI can see your routes
+boost:routes --name=domains
+
+# 4. AI can search Laravel 12 docs
+boost:docs "Laravel Cashier subscription"
+
+# 5. AI can read error logs
+boost:logs --tail=50
+```
+
+### Security with Boost
+Boost respects Laravel's security boundaries:
+- Only accesses development environment
+- Never exposes production credentials
+- Follows .env and .gitignore rules
+- AI-generated code includes SSRF protection
+- Automatically adds NetworkGuard validation
 
 ## Development Workflow Shortcuts
 
@@ -157,6 +235,43 @@ $this->authorize('view', $domain);
 - Extract reusable components
 - Document complex business logic
 
+## Boost-Enhanced Scanner Development
+
+### How Boost Helps Build Scanners
+```bash
+# AI can inspect existing scanner implementations
+boost:tinker "app(SslTlsScanner::class)->scan('https://github.com')"
+
+# AI can query scan results to understand patterns
+boost:query "SELECT module, score, status FROM scan_modules WHERE scan_id = ?"
+
+# AI can test SSRF protection
+boost:tinker "NetworkGuard::assertPublicHttpUrl('http://localhost')"
+
+# AI can generate scanner tests based on actual data
+boost:docs "Laravel HTTP client testing"
+```
+
+### Boost-Powered Debugging
+```php
+// When a scanner fails, AI can:
+// 1. Read the actual error logs
+boost:logs --grep="SslTlsScanner"
+
+// 2. Inspect the database state
+boost:query "SELECT * FROM scans WHERE status = 'failed' ORDER BY created_at DESC LIMIT 5"
+
+// 3. Test the scanner interactively
+boost:tinker "
+    $scanner = new SslTlsScanner();
+    $result = $scanner->scan('https://expired.badssl.com');
+    dd($result);
+"
+
+// 4. Generate a fix based on the actual error
+// AI understands the exact exception and stack trace
+```
+
 ## Scanner Architecture (Core Feature)
 
 ### Scanner Types & Weights
@@ -248,6 +363,126 @@ const onSubmit = (values: z.infer<typeof domainSchema>) => {
 };
 ```
 
+## Laravel Package Usage Patterns
+
+### Laravel Cashier (Stripe Integration)
+```php
+// Subscription management for $27/month plan
+class SubscriptionController extends Controller {
+    public function store(Request $request) {
+        $request->user()->newSubscription('default', 'price_monthly')
+            ->trialDays(14)
+            ->create($request->paymentMethodId);
+    }
+    
+    public function cancel() {
+        auth()->user()->subscription('default')->cancel();
+    }
+}
+
+// Check subscription status
+if ($user->subscribed('default')) {
+    // User has active subscription
+}
+
+// Webhook handling for Stripe events
+Route::post('/stripe/webhook', [WebhookController::class, 'handleWebhook']);
+```
+
+### Laravel Pennant (Feature Flags)
+```php
+// Define features in AppServiceProvider
+use Laravel\Pennant\Feature;
+
+Feature::define('advanced-scanner', fn (User $user) => 
+    $user->subscription_status === 'active' || 
+    $user->email === 'beta@achilleus.so'
+);
+
+Feature::define('ai-insights', fn (User $user) => 
+    $user->created_at->isBefore('2025-02-01') // Early adopters
+);
+
+// Use in controllers
+if (Feature::active('advanced-scanner')) {
+    $scanners[] = new AdvancedSecurityScanner();
+}
+
+// Use in Blade/React
+@feature('ai-insights')
+    <AiInsightsPanel />
+@endfeature
+```
+
+### Laravel Precognition (Live Validation)
+```typescript
+// Frontend: Live validation without duplicating backend rules
+import { useForm } from 'laravel-precognition-react-inertia';
+
+const form = useForm('post', '/domains', {
+    url: '',
+    email_mode: 'expected',
+});
+
+// Validate on blur for instant feedback
+<input 
+    {...form.register('url')}
+    onBlur={() => form.validate('url')}
+/>
+{form.errors.url && <span>{form.errors.url}</span>}
+
+// Backend: Reuse existing validation
+class StoreDomainRequest extends FormRequest {
+    public function rules(): array {
+        return [
+            'url' => ['required', 'url', 'starts_with:https://', new PublicUrl()],
+        ];
+    }
+}
+```
+
+### Laravel Socialite (OAuth Authentication)
+```php
+// OAuth providers configuration
+'github' => [
+    'client_id' => env('GITHUB_CLIENT_ID'),
+    'client_secret' => env('GITHUB_CLIENT_SECRET'),
+    'redirect' => '/auth/github/callback',
+],
+'google' => [
+    'client_id' => env('GOOGLE_CLIENT_ID'),
+    'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+    'redirect' => '/auth/google/callback',
+],
+
+// OAuth flow
+Route::get('/auth/{provider}', [SocialAuthController::class, 'redirect']);
+Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback']);
+
+class SocialAuthController extends Controller {
+    public function redirect($provider) {
+        return Socialite::driver($provider)->redirect();
+    }
+    
+    public function callback($provider) {
+        $socialUser = Socialite::driver($provider)->user();
+        
+        $user = User::firstOrCreate(
+            ['email' => $socialUser->getEmail()],
+            [
+                'name' => $socialUser->getName(),
+                'provider' => $provider,
+                'provider_id' => $socialUser->getId(),
+                'trial_ends_at' => now()->addDays(14),
+            ]
+        );
+        
+        Auth::login($user);
+        return redirect('/dashboard');
+    }
+}
+```
+
 ## Testing Approach
 
 ### Unit Tests (Pest PHP)
@@ -296,10 +531,18 @@ DB_DATABASE=achilleus_production
 QUEUE_CONNECTION=redis  # Cloud provides Redis
 CACHE_DRIVER=redis      # Auto-configured by Cloud
 
-# Stripe
+# Stripe (Laravel Cashier)
 STRIPE_KEY=pk_live_...
 STRIPE_SECRET=sk_live_...
 STRIPE_WEBHOOK_SECRET=whsec_...
+CASHIER_CURRENCY=usd
+CASHIER_CURRENCY_LOCALE=en_US
+
+# OAuth Providers (Laravel Socialite)
+GITHUB_CLIENT_ID=...
+GITHUB_CLIENT_SECRET=...
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
 
 # Security
 BCRYPT_ROUNDS=12
@@ -351,6 +594,8 @@ for i in {1..15}; do curl -H "Authorization: Bearer $token" /api/domains/1/scan;
 6. **ALWAYS** implement proper rate limiting
 7. **NEVER** expose stack traces in production
 8. **ALWAYS** authorize domain access with policies
+9. **ALWAYS** enforce trial expiry with EnsureSubscriptionActive middleware
+10. **NEVER** allow scanning features without active subscription or trial
 
 ## Support & Debugging
 
@@ -373,4 +618,4 @@ Log::error('SSL scan failed', ['domain' => $domain->url, 'error' => $e->getMessa
 Log::info('Scan completed', ['duration' => $duration, 'score' => $score]);
 ```
 
-This streamlined CLAUDE.md provides essential guidance in under 500 lines while maintaining all critical information for building Achilleus securely and efficiently.
+This comprehensive CLAUDE.md provides essential guidance for building Achilleus securely and efficiently with Laravel's ecosystem tools.
