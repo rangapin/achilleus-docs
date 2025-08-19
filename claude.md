@@ -8,8 +8,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Target**: Freelancers and small businesses needing affordable security monitoring  
 **Price**: $27/month for 10 domains with unlimited scans  
 **Stack**: Laravel 12 (with (https://laravel.com/docs/12.x/starter-kits) starter kit) + React 19 + Shadcn/ui + Inertia.js + Laravel Reverb + Laravel Cloud
-**Support**: security@achilleus.so (no automated email system in MVP)
 
+## Domain Configuration
+- **Primary Domain**: https://achilleus.so
+- **Support Email**: support@achilleus.so
+- **Laravel Cloud URL**: https://achilleus.so
+## Email Strategy (MVP)
+- Transactional emails via Laravel's mail system
+- Critical emails only: Welcome, Payment confirmation, Trial expiry
+- No marketing emails or notifications in MVP
+- Support handled manually at support@achilleus.so
 ## Key Resources
 - **Laravel 12**: https://laravel.com/docs/12.x
 - **Laravel Starter Kits**: https://laravel.com/docs/12.x/starter-kits (we use React kit)
@@ -18,7 +26,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Shadcn/ui**: https://ui.shadcn.com/
 - **Laravel Reverb**: https://reverb.laravel.com/
 - **Laravel Cashier (Stripe)**: https://laravel.com/docs/12.x/billing
-- **Laravel Pennant**: https://laravel.com/docs/12.x/pennant
 - **Laravel Precognition**: https://laravel.com/docs/12.x/precognition
 - **Laravel Socialite**: https://laravel.com/docs/12.x/socialite
 - **Laravel Boost**: https://boost.laravel.com/ (AI development assistant)
@@ -26,154 +33,51 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Documentation Structure
 
-- `technical.md` - System architecture, scanner implementation, database schema
-- `product.md` - Product specifications, UI mockups, business rules  
-- `execution.md` - Development phases, testing strategy, deployment plan
+- `/docs/technical.md` - System architecture, scanner implementation, database schema
+- `/docs/product.md` - Product specifications, UI mockups, business rules  
+- `/docs/execution.md` - Development phases, testing strategy, deployment plan
+- `/docs/database.md` - Complete database schema and relationships
+- `/docs/design.md` - UI/UX specifications and component library
+- `/docs/testing.md` - Testing strategy and patterns
 
-## Laravel Boost Integration (AI-Powered Development)
+## Laravel Boost Integration
 
-### What is Laravel Boost?
-Laravel Boost is an MCP (Model Context Protocol) server that supercharges AI-assisted development by providing deep project context and Laravel-specific knowledge to AI coding assistants. It enables AI to understand YOUR specific project, not just generic Laravel.
+**Laravel Boost** is an MCP server that provides AI assistants with deep project context and Laravel-specific knowledge. When active, AI can inspect your database, run Tinker commands, search Laravel 12 docs, read logs, and understand your actual project structure.
 
-### Boost Capabilities
-When Laravel Boost is active, AI assistants can:
-- **Run Tinker** - Execute PHP code in your project context
-- **Query Database** - Run actual queries to understand data structure
-- **Inspect Schema** - See your actual migrations and database design
-- **Search Docs** - Access version-specific Laravel 12 documentation
-- **Read Logs** - Debug issues by reading actual error logs
-- **Generate Tests** - Create tests following your project conventions
-- **Understand Routes** - See all your application routes and middleware
-- **Access Config** - Read your actual configuration values
+**Installation**: See `/docs/execution.md` Phase 0 for setup instructions.
 
-### Installation & Setup
-```bash
-# Install Laravel Boost (dev dependency)
-composer require laravel/boost --dev
+**Key Capabilities**: Database queries, code execution, route inspection, configuration access, log analysis, test generation following project conventions.
 
-# Initialize Boost in your project
-php artisan boost:install
-
-# Start the MCP server for AI agents
-php artisan boost:mcp
-```
-
-### AI Guidelines Structure
-Boost automatically creates `.ai/` directory with:
-- `guidelines/` - Custom AI rules for your project
-- `claude.md` - Auto-generated from your guidelines
-- Version-specific Laravel 12 best practices
-- Achilleus-specific security requirements
-
-### Using Boost with AI Tools
-```bash
-# With Claude Code
-php artisan boost:mcp  # Boost provides context automatically
-
-# With Cursor IDE
-# Boost integrates via .cursorrules file
-
-# With GitHub Copilot
-# Boost provides context through .github/copilot-instructions.md
-```
-
-### Boost-Powered Development Workflow
-```bash
-# 1. AI can inspect your actual database
-boost:query "SELECT * FROM domains WHERE last_scan_score < 70"
-
-# 2. AI can run Tinker to test code
-boost:tinker "User::find(1)->domains()->count()"
-
-# 3. AI can see your routes
-boost:routes --name=domains
-
-# 4. AI can search Laravel 12 docs
-boost:docs "Laravel Cashier subscription"
-
-# 5. AI can read error logs
-boost:logs --tail=50
-```
-
-### Security with Boost
-Boost respects Laravel's security boundaries:
-- Only accesses development environment
-- Never exposes production credentials
-- Follows .env and .gitignore rules
-- AI-generated code includes SSRF protection
-- Automatically adds NetworkGuard validation
+**Security**: Boost only runs in development, respects .env boundaries, and automatically includes SSRF protection in generated code.
 
 ## Development Workflow Shortcuts
 
 ### Core Commands
 
-```bash
-# Planning Phase
-achilleus-plan() {
-    echo "📋 PLANNING: Break down → Security review → Test cases → SSRF validation"
-}
-
-# Testing Phase (TDD)
-achilleus-test() {
-    echo "🧪 TESTS FIRST: Unit → Feature → E2E → Security validation"
-    echo "Commands: php artisan pest | npx playwright test"
-}
-
-# Implementation Phase
-achilleus-code() {
-    echo "💻 CODE: Laravel conventions → Shadcn/ui → Security-first → Error handling"
-}
-
-# Verification Phase
-achilleus-verify() {
-    echo "✅ VERIFY: php artisan pest --parallel && npm run type-check && npx playwright test"
-}
-```
+- **achilleus-plan**: Break down → Security review → Test cases → SSRF validation
+- **achilleus-test**: Tests first (Unit → Feature → E2E → Security validation)
+- **achilleus-code**: Laravel conventions → Shadcn/ui → Security-first → Error handling
+- **achilleus-verify**: Run all tests in parallel, type checking, and E2E tests
 
 ## Security-First Development (Critical)
 
 ### S1: Input Validation & SSRF Protection
-```php
-// ALWAYS use Form Requests
-class StoreDomainRequest extends FormRequest {
-    public function rules(): array {
-        return [
-            'url' => ['required', 'url', 'starts_with:https://', new PublicUrl()],
-        ];
-    }
-}
-
-// ALWAYS validate URLs before external requests
-NetworkGuard::assertPublicHttpUrl($url);
-```
+- **ALWAYS** use Form Requests for validation
+- **ALWAYS** validate URLs with NetworkGuard before external requests
+- Enforce HTTPS-only domains
+- Use PublicUrl validation rule
 
 ### S2: Scanner Implementation Pattern
-```php
-class SecurityScanner extends AbstractScanner {
-    protected int $timeout = 20;
-    protected int $retryAttempts = 2;
-    
-    // Base class handles SSRF, retries, rate limiting automatically
-    protected function performScan(string $url, array $context = []): ModuleResult {
-        // Your scanner logic here
-    }
-}
-
-// Jobs are dispatched to Laravel Cloud managed workers
-RunDomainScan::dispatch($domain); // Cloud handles queue infrastructure
-```
+- Extend AbstractScanner for all scanners
+- Base class handles SSRF, retries, rate limiting automatically
+- Set appropriate timeout and retry attempts
+- Jobs dispatched to Laravel Cloud managed workers
 
 ### S3: Rate Limiting & Authentication
-```php
-// Two-tier rate limiting: User level (10 scans/minute)
-Route::middleware(['throttle:scans'])->group(function () {
-    Route::post('/domains/{domain}/scan', [DomainScanController::class, 'store']);
-});
-
-// Scanner level rate limiting handled in AbstractScanner
-// Always authorize domain access
-$this->authorize('view', $domain);
-```
+- Two-tier rate limiting: User level (10 scans/minute) and Scanner level
+- Use throttle middleware on scan endpoints
+- Always authorize domain access with policies
+- Enforce trial expiry with middleware
 
 ## Best Practices Checklist
 
@@ -235,42 +139,17 @@ $this->authorize('view', $domain);
 - Extract reusable components
 - Document complex business logic
 
-## Boost-Enhanced Scanner Development
+## Scanner Development with Boost
 
-### How Boost Helps Build Scanners
-```bash
-# AI can inspect existing scanner implementations
-boost:tinker "app(SslTlsScanner::class)->scan('https://github.com')"
+Laravel Boost enables AI to:
+- Inspect existing scanner implementations
+- Query scan results to understand patterns
+- Test SSRF protection interactively
+- Generate tests based on actual data
+- Debug failures by reading logs and database state
+- Test scanners with real domains in development
 
-# AI can query scan results to understand patterns
-boost:query "SELECT module, score, status FROM scan_modules WHERE scan_id = ?"
-
-# AI can test SSRF protection
-boost:tinker "NetworkGuard::assertPublicHttpUrl('http://localhost')"
-
-# AI can generate scanner tests based on actual data
-boost:docs "Laravel HTTP client testing"
-```
-
-### Boost-Powered Debugging
-```php
-// When a scanner fails, AI can:
-// 1. Read the actual error logs
-boost:logs --grep="SslTlsScanner"
-
-// 2. Inspect the database state
-boost:query "SELECT * FROM scans WHERE status = 'failed' ORDER BY created_at DESC LIMIT 5"
-
-// 3. Test the scanner interactively
-boost:tinker "
-    $scanner = new SslTlsScanner();
-    $result = $scanner->scan('https://expired.badssl.com');
-    dd($result);
-"
-
-// 4. Generate a fix based on the actual error
-// AI understands the exact exception and stack trace
-```
+See `/docs/technical.md` for detailed scanner architecture and implementation patterns.
 
 ## Scanner Architecture (Core Feature)
 
@@ -280,13 +159,10 @@ boost:tinker "
 - **DNS/Email Scanner**: 30% weight - SPF, DKIM, DMARC validation
 
 ### Implementation Requirements
-```php
-abstract class AbstractScanner implements Scanner {
-    // Common functionality: rate limiting, SSRF protection, retry logic
-    public function scan(string $url, array $context = []): ModuleResult;
-    abstract protected function performScan(string $url, array $context = []): ModuleResult;
-}
-```
+- All scanners extend AbstractScanner
+- Common functionality: rate limiting, SSRF protection, retry logic
+- Each scanner implements performScan() method
+- Results stored as ModuleResult with score, status, and raw data
 
 ### Security Scoring
 - Grades: A+ (95-100), A (90-94), B+ (85-89), B (80-84), C (70-79), D (60-69), F (0-59)
@@ -294,16 +170,18 @@ abstract class AbstractScanner implements Scanner {
 - When a scanner fails: Redistribute weights proportionally among working scanners
 - Store raw scan data in JSONB for detailed analysis
 
-## Database Schema (Essential)
+See `/docs/technical.md` for complete implementation details.
+
+## Database Schema
+
+See **database.md** for complete schema, relationships, indexes, and JSONB structures.
 
 ### Core Tables
-```sql
-users: id, email, trial_ends_at, subscription_status
-domains: id, user_id, url, email_mode, last_scan_score, last_scanned_at
-scans: id, domain_id, user_id, status, total_score, grade, started_at, completed_at
-scan_modules: id, scan_id, module, score, status, raw JSONB NOT NULL DEFAULT '{}'
-reports: id, user_id, filename, file_path, generated_at
-```
+- **users**: Authentication, billing, OAuth support
+- **domains**: User domains with scan history
+- **scans**: Security scan records with scoring
+- **scan_modules**: Individual scanner results
+- **reports**: Generated PDF reports
 
 ### Key Relationships
 - User hasMany Domains, Scans, Reports
@@ -313,197 +191,71 @@ reports: id, user_id, filename, file_path, generated_at
 ## API Design Patterns
 
 ### Standard CRUD Controllers
-```php
-class DomainController extends Controller {
-    public function index(): Response     // GET /domains
-    public function store(StoreDomainRequest $request): Response  // POST /domains
-    public function show(Domain $domain): Response    // GET /domains/{id}
-    public function destroy(Domain $domain): Response // DELETE /domains/{id}
-}
-```
+- **GET /domains** - List user domains
+- **POST /domains** - Create new domain (with validation)
+- **GET /domains/{id}** - Show domain details
+- **DELETE /domains/{id}** - Remove domain
 
 ### Scan Operations
-```php
-class DomainScanController extends Controller {
-    public function store(Domain $domain): Response {
-        // Create scan record, dispatch job, return scan ID
-        $scan = $domain->scans()->create(['status' => 'pending']);
-        RunDomainScan::dispatch($scan);
-        return response()->json(['scan_id' => $scan->id]);
-    }
-}
-```
+- **POST /domains/{id}/scan** - Trigger individual scan
+- **POST /scans/bulk** - Scan all user domains
+- Returns scan ID for tracking progress
+- Jobs dispatched to Laravel Cloud workers
 
 ## Frontend Patterns
 
 ### Page Structure (Inertia.js)
-```typescript
-// Standard page component structure
-export default function DomainsIndex({ domains, auth }: PageProps<{ domains: Domain[] }>) {
-    return (
-        <AuthenticatedLayout user={auth.user}>
-            <Head title="Domains" />
-            <PageHeader title="Domains" actions={<AddDomainButton />} />
-            <DomainsTable domains={domains} />
-        </AuthenticatedLayout>
-    );
-}
-```
+- Use AuthenticatedLayout for protected pages
+- Include Head component for page titles
+- PageHeader with title and action buttons
+- Data passed as props from Laravel controllers
 
 ### Form Handling
-```typescript
-// Use React Hook Form + Zod for all forms
-const form = useForm<z.infer<typeof domainSchema>>({
-    resolver: zodResolver(domainSchema),
-    defaultValues: { email_mode: "expected" }
-});
+- React Hook Form for form state management
+- Zod for schema validation
+- Laravel Precognition for live validation
+- Consistent error handling and display
 
-const onSubmit = (values: z.infer<typeof domainSchema>) => {
-    router.post('/domains', values);
-};
-```
+See `/docs/design.md` for complete UI specifications and component library.
 
-## Laravel Package Usage Patterns
+## Laravel Package Integration
 
-### Laravel Cashier (Stripe Integration)
-```php
-// Subscription management for $27/month plan
-class SubscriptionController extends Controller {
-    public function store(Request $request) {
-        $request->user()->newSubscription('default', 'price_monthly')
-            ->trialDays(14)
-            ->create($request->paymentMethodId);
-    }
-    
-    public function cancel() {
-        auth()->user()->subscription('default')->cancel();
-    }
-}
-
-// Check subscription status
-if ($user->subscribed('default')) {
-    // User has active subscription
-}
-
-// Webhook handling for Stripe events
-Route::post('/stripe/webhook', [WebhookController::class, 'handleWebhook']);
-```
-
-### Laravel Pennant (Feature Flags)
-```php
-// Define features in AppServiceProvider
-use Laravel\Pennant\Feature;
-
-Feature::define('advanced-scanner', fn (User $user) => 
-    $user->subscription_status === 'active' || 
-    $user->email === 'beta@achilleus.so'
-);
-
-Feature::define('ai-insights', fn (User $user) => 
-    $user->created_at->isBefore('2025-02-01') // Early adopters
-);
-
-// Use in controllers
-if (Feature::active('advanced-scanner')) {
-    $scanners[] = new AdvancedSecurityScanner();
-}
-
-// Use in Blade/React
-@feature('ai-insights')
-    <AiInsightsPanel />
-@endfeature
-```
+### Laravel Cashier (Stripe Billing)
+- $27/month subscription management
+- 14-day trial period
+- Webhook handling for payment events
+- Subscription status tracking
 
 ### Laravel Precognition (Live Validation)
-```typescript
-// Frontend: Live validation without duplicating backend rules
-import { useForm } from 'laravel-precognition-react-inertia';
+- Real-time form validation
+- No duplicate validation rules
+- Frontend-backend sync
+- Instant user feedback
 
-const form = useForm('post', '/domains', {
-    url: '',
-    email_mode: 'expected',
-});
+### Laravel Socialite (OAuth)
+- GitHub and Google authentication
+- Automatic user creation
+- Trial period for OAuth users
+- Seamless login flow
 
-// Validate on blur for instant feedback
-<input 
-    {...form.register('url')}
-    onBlur={() => form.validate('url')}
-/>
-{form.errors.url && <span>{form.errors.url}</span>}
-
-// Backend: Reuse existing validation
-class StoreDomainRequest extends FormRequest {
-    public function rules(): array {
-        return [
-            'url' => ['required', 'url', 'starts_with:https://', new PublicUrl()],
-        ];
-    }
-}
-```
-
-### Laravel Socialite (OAuth Authentication)
-```php
-// OAuth providers configuration
-'github' => [
-    'client_id' => env('GITHUB_CLIENT_ID'),
-    'client_secret' => env('GITHUB_CLIENT_SECRET'),
-    'redirect' => '/auth/github/callback',
-],
-'google' => [
-    'client_id' => env('GOOGLE_CLIENT_ID'),
-    'client_secret' => env('GOOGLE_CLIENT_SECRET'),
-    'redirect' => '/auth/google/callback',
-],
-
-// OAuth flow
-Route::get('/auth/{provider}', [SocialAuthController::class, 'redirect']);
-Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback']);
-
-class SocialAuthController extends Controller {
-    public function redirect($provider) {
-        return Socialite::driver($provider)->redirect();
-    }
-    
-    public function callback($provider) {
-        $socialUser = Socialite::driver($provider)->user();
-        
-        $user = User::firstOrCreate(
-            ['email' => $socialUser->getEmail()],
-            [
-                'name' => $socialUser->getName(),
-                'provider' => $provider,
-                'provider_id' => $socialUser->getId(),
-                'trial_ends_at' => now()->addDays(14),
-            ]
-        );
-        
-        Auth::login($user);
-        return redirect('/dashboard');
-    }
-}
-```
+See `/docs/technical.md` for implementation patterns and `/docs/execution.md` for setup instructions.
 
 ## Testing Approach
 
-### Unit Tests (Pest PHP)
-```php
-test('ssl scanner detects expired certificates', function () {
-    $scanner = app(SslTlsScanner::class);
-    $result = $scanner->scan('https://expired.badssl.com');
-    expect($result->score)->toBe(0);
-});
-```
+See **testing.md** for complete testing strategy, patterns, and examples.
 
-### E2E Tests (Playwright)
-```typescript
-test('user can add domain and view scan results', async ({ page }) => {
-    await page.goto('/domains');
-    await page.getByRole('button', { name: 'Add Domain' }).click();
-    await page.fill('[name="url"]', 'https://example.com');
-    await page.getByRole('button', { name: 'Add & Scan' }).click();
-    await expect(page.getByText('Scan completed')).toBeVisible();
-});
-```
+### Testing Stack
+- **Unit Tests**: Pest PHP
+- **Feature Tests**: Laravel HTTP testing
+- **E2E Tests**: Playwright
+- **Security Tests**: Custom assertions
+
+### Key Testing Areas
+- Scanner functionality with real domains
+- SSRF protection validation
+- Rate limiting enforcement
+- Authorization policies
+- Trial period calculations
 
 ## Deployment & Production
 
@@ -521,7 +273,7 @@ test('user can add domain and view scan results', async ({ page }) => {
 # Core Configuration
 APP_ENV=production
 APP_DEBUG=false
-APP_URL=https://achilleus.app
+APP_URL=https://achilleus.so
 
 # Database
 DB_CONNECTION=pgsql
@@ -552,37 +304,26 @@ SESSION_SECURE_COOKIE=true
 ## Common Commands
 
 ### Development
-```bash
-# Local Development
-php artisan migrate --seed
-php artisan queue:work  # Local only, Cloud handles this in production
-npm run dev
+- `php artisan migrate --seed` - Database setup
+- `php artisan queue:work` - Local queue processing
+- `npm run dev` - Frontend development server
+- `php artisan boost:mcp` - Start AI context server
 
-# Testing
-php artisan pest --parallel
-npm run type-check
-npx playwright test
+### Testing
+- `php artisan test --parallel` - Run all tests
+- `npm run type-check` - TypeScript validation
+- `npx playwright test` - E2E tests
 
-# Quality
-php artisan pint
-npm run lint
-
-# Production
-php artisan optimize
-php artisan config:cache
-php artisan route:cache
-```
+### Quality
+- `php artisan pint` - PHP code style
+- `npm run lint` - JavaScript linting
 
 ### Security Testing
-```bash
-# Test SSRF protection
-curl -X POST -d '{"url":"http://localhost"}' /api/domains
-curl -X POST -d '{"url":"http://192.168.1.1"}' /api/domains
-curl -X POST -d '{"url":"http://169.254.169.254"}' /api/domains
+- Test SSRF protection with localhost/private IPs
+- Verify rate limiting (10 scans/minute)
+- Check authorization policies
 
-# Test rate limiting
-for i in {1..15}; do curl -H "Authorization: Bearer $token" /api/domains/1/scan; done
-```
+See `/docs/testing.md` for comprehensive testing commands.
 
 ## Critical Security Reminders
 
@@ -602,20 +343,20 @@ for i in {1..15}; do curl -H "Authorization: Bearer $token" /api/domains/1/scan;
 ### Common Issues
 - **SSRF Blocked**: Check NetworkGuard configuration, ensure public URLs only
 - **Scan Timeouts**: Verify timeout settings in scanner classes
-- **Queue Jobs Failing**: Check failed_jobs table, Laravel Cloud logs, verify scanner dependencies
-- **Rate Limiting**: Monitor cache keys, adjust limits in RateLimiter config
-- **Support Requests**: Direct users to security@achilleus.so (no automated email in MVP)
+- **Queue Jobs Failing**: Check failed_jobs table, Laravel Cloud logs
+- **Rate Limiting**: Monitor cache keys, adjust limits in config
+- **Support Requests**: Direct to support@achilleus.so (manual handling in MVP)
 
-### Logging
-```php
-// Security events
-Log::warning('SSRF attempt blocked', ['url' => $url]);
+### Logging Strategy
+- Log security events (SSRF attempts, auth failures)
+- Track scanner errors with context
+- Monitor performance metrics
+- Use appropriate log levels (error, warning, info)
 
-// Scanner issues  
-Log::error('SSL scan failed', ['domain' => $domain->url, 'error' => $e->getMessage()]);
+## Additional Resources
 
-// Performance monitoring
-Log::info('Scan completed', ['duration' => $duration, 'score' => $score]);
-```
-
-This comprehensive CLAUDE.md provides essential guidance for building Achilleus securely and efficiently with Laravel's ecosystem tools.
+- **Technical Details**: See `/docs/technical.md` for architecture and implementation
+- **Database Schema**: See `/docs/database.md` for complete schema
+- **Testing Strategy**: See `/docs/testing.md` for TDD approach
+- **UI/UX Specs**: See `/docs/design.md` for interface guidelines
+- **Development Phases**: See `/docs/execution.md` for timeline and workflow

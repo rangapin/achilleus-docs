@@ -3,18 +3,6 @@
 ## Project Overview
 Build a security monitoring SaaS from scratch using Laravel 12 with React 19 starter kit. The application provides automated security scanning for up to 10 domains at $27/month, targeting developers and freelancers who need affordable security monitoring.
 
-**Key Technologies**:
-- Laravel 12: https://laravel.com/docs/12.x
-- React 19: https://react.dev/
-- Laravel Starter Kits: https://laravel.com/docs/12.x/starter-kits
-- Laravel Cloud: https://cloud.laravel.com/
-- Shadcn/ui: https://ui.shadcn.com/
-- Laravel Reverb: https://reverb.laravel.com/
-- Laravel Cashier: https://laravel.com/docs/12.x/billing
-- Laravel Pennant: https://laravel.com/docs/12.x/pennant
-- Laravel Precognition: https://laravel.com/docs/12.x/precognition
-- Laravel Socialite: https://laravel.com/docs/12.x/socialite
-
 **Target Timeline**: 21 days from empty repository to production MVP
 **Development Approach**: Test-Driven Development (TDD) with security-first implementation
 **Starter Kit**: Laravel 12 with React starter kit from https://laravel.com/docs/12.x/starter-kits
@@ -109,7 +97,7 @@ achilleus-verify [phase].[subtask] # Run tests, check performance
 
 #### 0.1 Initial Laravel Project Setup
 - Create new directory `achilleus`
-- Install Laravel 12 with React starter kit
+- Install Laravel 12 with React starter kit (https://laravel.com/docs/12.x/starter-kits)
 - Verify React 19, Inertia.js, and Tailwind CSS are included
 - Confirm TypeScript configuration is present
 - Test default authentication pages work
@@ -124,14 +112,13 @@ achilleus-verify [phase].[subtask] # Run tests, check performance
 
 #### 0.3 Package Installation  
 - Install Laravel Cashier for Stripe billing (laravel/cashier)
-- Install Laravel Pennant for feature flags (laravel/pennant)
 - Install Laravel Precognition for live validation (laravel/precognition)
 - Install Laravel Socialite for OAuth (laravel/socialite)
 - Install PDF generation (barryvdh/laravel-dompdf)
 - Install development tools (laravel/pint, pestphp/pest)
 - Install Playwright for E2E testing
 - Run Cashier migrations (php artisan migrate:cashier)
-- Run Pennant migrations (php artisan migrate:pennant)
+- composer require resend/resend-php
 
 #### 0.4 Shadcn/ui Configuration
 - Initialize Shadcn/ui with dark theme
@@ -194,7 +181,6 @@ achilleus-verify [phase].[subtask] # Run tests, check performance
 - Scan_modules table with module type, score, status, raw JSONB data
 - Reports table with filename, file_path, file_size
 - Subscription_items table for Laravel Cashier
-- Features table for Laravel Pennant feature flags
 
 #### 1.2 Models & Relationships
 - User model with domains(), scans(), reports() relationships
@@ -206,7 +192,6 @@ achilleus-verify [phase].[subtask] # Run tests, check performance
 #### 1.3 Laravel Package Configuration
 - Configure Laravel Cashier with Stripe keys and webhook endpoint
 - Set up Laravel Socialite providers (GitHub, Google) with OAuth credentials
-- Initialize Laravel Pennant with feature flag definitions in AppServiceProvider
 - Configure Laravel Precognition middleware for form validation endpoints
 - Create Billable trait configuration on User model for Cashier
 
@@ -224,20 +209,12 @@ achilleus-verify [phase].[subtask] # Run tests, check performance
 - Subscription status tracking
 - Trial expiry calculations
 
-#### 1.5 GDPR Database Schema
-- Create user_consents table for tracking consent records
-- Create data_processing_logs table for GDPR requests
-- Create gdpr_audit_logs table for data change tracking
-- Add indexes for efficient querying
-- Set up foreign key constraints with CASCADE deletes
-
 #### 1.6 Configuration Setup
 - Scoring config with weights (SSL: 40%, Headers: 30%, DNS: 30%)
 - Grade thresholds (A+: 95+, A: 90+, B+: 85+, B: 80+, C: 70+, D: 60+, F: <60)
 - Domain limits (max 10 per user)
 - Rate limits (10 scans/minute per user)
 - Environment variables for all services
-- GDPR retention periods (90 days for scans, 2 years for audit logs)
 
 ---
 
@@ -406,6 +383,7 @@ achilleus-verify [phase].[subtask] # Run tests, check performance
 - Bypass domain limits
 
 ### What to Test
+**See `/docs/testing.md` for complete testing patterns**
 - Domain limit enforcement (max 10)
 - URL normalization (remove www, trailing slash)
 - HTTPS-only validation
@@ -461,15 +439,6 @@ achilleus-verify [phase].[subtask] # Run tests, check performance
 - Payment method management preparation
 - Billing history endpoint preparation
 
-#### 4.7 GDPR Compliance API
-- GdprController with consent management endpoints
-- POST /api/gdpr/consent - Record user consent
-- POST /api/gdpr/export - Export user data
-- DELETE /api/gdpr/delete-account - Delete user account
-- GET /api/gdpr/privacy-settings - Get privacy preferences
-- Implement GdprService for data processing
-- Add data retention cleanup command
-
 ---
 
 ## Phase 5: Complete Frontend UI (Days 10-13)
@@ -511,6 +480,7 @@ achilleus-verify [phase].[subtask] # Run tests, check performance
 - Trial/subscription status banner
 
 #### 5.2 Dashboard Page (Complete)
+**See `/docs/design.md` for complete UI specifications**
 - Four metric cards with real data (Score, Domains, Last Scan, Critical Issues)
 - Security trends chart using Recharts (7/30/90 day views)
 - Recent activity feed with scan results
@@ -555,17 +525,7 @@ achilleus-verify [phase].[subtask] # Run tests, check performance
 - Account deletion option
 - API keys section (future enhancement)
 
-#### 5.8 Privacy & GDPR Settings
-- Privacy dashboard in user settings
-- Cookie consent banner component
-- Data export button with email delivery
-- Account deletion with confirmation modal
-- Consent management toggles (marketing, analytics)
-- Data retention information display
-- Privacy policy and terms of service pages
-- Consent checkboxes in registration flow
-
-#### 5.9 Empty States & Error Handling
+#### 5.8 Empty States & Error Handling
 - Empty states for all lists with helpful CTAs
 - Loading skeletons for all async operations
 - Error boundaries with user-friendly messages
@@ -657,24 +617,6 @@ achilleus-verify [phase].[subtask] # Run tests, check performance
 - Domain limit enforcement (10 domains max)
 - Scan rate limiting per subscription tier
 
-#### 6.8 Subscription State Handling
-- Trial active: Full access for 14 days
-- Trial expired: Read-only access, scanning disabled
-- Active subscription: Full access, no restrictions
-- Grace period: Full access with payment warnings
-- Suspended: Read-only like expired trial
-- Cancelled active: Full access until end date
-- Cancelled expired: Read-only access
-
-#### 6.9 Testing Subscription States
-- Test trial expiry after 14 days
-- Test scanning blocked for expired trials
-- Test billing page redirect on protected routes
-- Test grace period warnings and access
-- Test reactivation after payment update
-- Test subscription cancellation flow
-- Verify API returns 402 for expired trials
-
 ---
 
 ## Phase 7: Testing & Polish (Days 16-18)
@@ -723,40 +665,21 @@ achilleus-verify [phase].[subtask] # Run tests, check performance
 - Secure storage with signed URLs
 - Report management UI completion
 
-#### 7.3 Feature Flags Implementation (Laravel Pennant)
-- Define feature flags in AppServiceProvider
-- Implement 'enhanced-scanners' flag for paid users
-- Add 'ai-insights' flag with gradual rollout
-- Create 'bulk-operations' flag for power users
-- Add 'api-access' flag for subscribed users
-- Integrate feature checks in scanner controllers
-- Add feature flag UI toggles in admin panel
-
-#### 7.4 Performance Optimization
+#### 7.3 Performance Optimization
 - Dashboard query optimization (N+1 prevention)
 - Frontend bundle size reduction
 - Image optimization and lazy loading
 - API response time improvements
 - Cache implementation for frequent queries
 
-#### 7.5 UI/UX Polish
+#### 7.4 UI/UX Polish
 - Consistent spacing and typography
 - Smooth transitions and animations
 - Form validation feedback improvements
 - Loading state refinements
 - Dark theme consistency check
 
-#### 7.6 GDPR Compliance Testing
-- Test consent recording and withdrawal flows
-- Verify data export generates complete JSON
-- Test account deletion removes all user data
-- Verify audit logging captures all changes
-- Test data retention cleanup command
-- Verify cookie consent banner functionality
-- Test privacy settings API endpoints
-- Validate GDPR compliance for EU users
-
-#### 7.7 Bug Fixes & Edge Cases
+#### 7.5 Bug Fixes & Edge Cases
 - Fix issues discovered during testing
 - Handle network timeout scenarios
 - Improve error messages
@@ -874,9 +797,7 @@ achilleus-verify [phase].[subtask] # Run tests, check performance
 
 #### 9.2 Legal Pages
 - Terms of Service page
-- Privacy Policy page
-- Cookie Policy page
-- GDPR compliance statement
+- Privacy Policy page (basic)
 - Terms acceptance checkbox on signup
 
 #### 9.3 SEO & Analytics
@@ -913,8 +834,8 @@ achilleus-verify [phase].[subtask] # Run tests, check performance
 - [ ] Stripe subscription ($27/month)
 - [ ] Dashboard with real metrics
 - [ ] Activity tracking
-- [ ] Support contact (security@achilleus.so)
-- [ ] Legal compliance
+- [ ] Support contact (support@achilleus.so)
+- [ ] Basic legal pages (Terms, Privacy)
 
 ### Performance Targets
 - Dashboard load: <500ms

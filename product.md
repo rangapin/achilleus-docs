@@ -85,13 +85,11 @@ Achilleus is a security monitoring SaaS that provides comprehensive website secu
 #### 6. Support System (Simplified MVP)
 - Support email displayed in footer and profile
 - Basic FAQ on landing page
-- Contact email: security@achilleus.so
+- Contact email: support@achilleus.so
 
-#### 7. Legal & Compliance (MVP Requirements)
+#### 7. Legal Pages (MVP Requirements)
 - Terms of Service acceptance on signup (required)
-- Cookie consent banner (simple implementation)
 - Privacy Policy link (static page)
-- GDPR data export/deletion (manual process on request)
 
 ### User Experience
 
@@ -108,395 +106,96 @@ Profile Menu:
 └── Sign Out
 ```
 
-## Technology Stack & Resources
+## Technology Stack
 
-### Core Technologies
-- **Laravel 12**: https://laravel.com/docs/12.x
-- **React 19**: https://react.dev/
-- **Shadcn/ui**: https://ui.shadcn.com/
-- **Laravel Cloud**: https://cloud.laravel.com/
-- **Laravel Reverb**: https://reverb.laravel.com/
-- **Stripe API**: Direct integration (no Cashier)
+- **Backend**: Laravel 12 with PHP 8.3+
+- **Frontend**: React 19 with TypeScript
+- **UI Library**: Shadcn/ui
+- **Infrastructure**: Laravel Cloud
+- **Real-time**: Laravel Reverb
+- **Payments**: Laravel Cashier (Stripe)
 
-## Design System & UI Specifications
+## User Interface
 
-### Color Scheme
-- **Primary Background**: Black (#000000) or very dark gray (#0a0a0b)
-- **Card Backgrounds**: Dark gray (#1a1a1a)
-- **Text Primary**: White (#ffffff)
-- **Text Secondary**: Light gray (#a0a0a0)
-- **Accent Colors**:
-  - Success/Green: #22c55e (scores 80+)
-  - Warning/Orange: #f59e0b (scores 60-79)
-  - Danger/Red: #ef4444 (scores <60, critical issues)
-  - Info/Blue: #3b82f6 (trial banner, action buttons)
+**Complete UI/UX specifications have been moved to design.md**
 
-### Typography
-- **Font Family**: System font stack (Inter or similar)
-- **Heading Sizes**: 
-  - H1: 2.5rem (40px) - Page titles
-  - H2: 2rem (32px) - Section headers
-  - H3: 1.5rem (24px) - Card titles
-- **Body Text**: 0.875rem (14px)
-- **Small Text**: 0.75rem (12px) - Subtitles, metadata
+Key aspects:
+- Dark theme design for security focus
+- Dashboard-centric navigation
+- Real-time updates via WebSockets
+- Mobile-responsive layouts
+- Comprehensive empty states
 
-## Data-Driven UI Components
+## Data Requirements
 
-### Dashboard Cards (Dynamic Data)
+**See `/docs/design.md` for complete UI component specifications**
+
+### Dashboard Metrics
 ```
-Card Layout: 2x2 Grid
+- **Security Score**: Average of all domain scores
+- **Active Domains**: Count of active domains (max 10)
+- **Last Scan**: Most recent scan timestamp and domain
+- **Critical Issues**: Domains scoring below 60
 
-┌─────────────────────────┐ ┌─────────────────────────┐
-│ SECURITY SCORE          │ │ ACTIVE DOMAINS          │
-│                         │ │                         │
-│ {avg_score}/100         │ │ {domain_count}          │
-│ {grade_badge}           │ │ {count}/{max} available │
-│ {vs_industry_text}      │ │                         │
-└─────────────────────────┘ └─────────────────────────┘
+### Security Score Trends
+- Time periods: 7, 30, 90 days, 1 year
+- Data aggregated by day/week/month
+- Color-coded based on score ranges
 
-┌─────────────────────────┐ ┌─────────────────────────┐
-│ LAST SCAN               │ │ CRITICAL ISSUES         │
-│                         │ │                         │
-│ {time_ago}              │ │ {critical_count}        │
-│ {domain_name}           │ │ {issues_text}           │
-│ {date_range}            │ │                         │
-└─────────────────────────┘ └─────────────────────────┘
-```
+## Business Logic
 
-**Data Sources:**
-- `{avg_score}`: ROUND(AVG(domains.last_scan_score)) WHERE user_id = auth_user
-- `{grade_badge}`: Calculated from avg_score using grade mapping
-- `{vs_industry_text}`: "Above/Below industry average" (70 = industry baseline)
-- `{domain_count}`: COUNT(domains) WHERE user_id = auth_user AND is_active = true
-- `{count}/{max}`: domain_count + "/" + plan_config.max_domains
-- `{time_ago}`: Latest scans.completed_at formatted as relative time
-- `{domain_name}`: domain.display_name from latest scan
-- `{critical_count}`: COUNT(domains) WHERE last_scan_score < 60
-- `{issues_text}`: "Require attention" if > 0, else "All good"
+### Subscription Management
+- **Trial Period**: 14 days from registration
+- **Price**: $27/month for Solo Plan
+- **Limits**: 10 domains, unlimited scans
+- **Billing**: Handled via Laravel Cashier
+- **Cancellation**: Immediate with access until period end
 
-### Security Score Trends Chart (Dynamic)
-```
-Chart Component
-┌─────────────────────────────────────────────────────────────┐
-│ Security Score Trends              [Time Period Dropdown ▼] │
-│                                                             │
-│ 100 │                                                       │
-│  80 │ {bars_rendered_from_historical_scan_data}             │
-│  60 │                                                       │
-│  40 │                                                       │
-│  20 │                                                       │
-│   0 └─┬─────┬─────┬─────┬─────┬─────┬─────┬──               │
-│      {time_periods_based_on_selection}                      │
-└─────────────────────────────────────────────────────────────┘
-```
+### Domain Management Rules
+- **HTTPS Only**: No HTTP domains allowed
+- **URL Normalization**: Remove www, trailing slashes
+- **Duplicate Prevention**: One entry per unique domain
+- **Email Mode**: Expected (with SPF/DKIM) or None
+- **Deletion**: Cascades to remove all scan history
 
-**Data Source:** 
-```sql
-SELECT DATE_TRUNC('day/week/month', created_at) as period,
-       AVG(total_score) as avg_score
-FROM scans 
-WHERE user_id = auth_user 
-  AND created_at >= {selected_range_start}
-GROUP BY period 
-ORDER BY period
-```
+### Scanning Logic
+- **Rate Limiting**: 10 scans/minute per user
+- **Scan Duration**: 15-30 seconds typical
+- **Retry Logic**: 3 attempts with exponential backoff
+- **Failure Handling**: Redistribute weights among working scanners
+- **Queue Processing**: Laravel Cloud managed workers
 
-### Page Layouts (Data-Driven)
+### Data Access Patterns
 
-#### 1. Profile Settings Page
-```
-Profile Settings
-┌─────────────────────────────────────────────────────────────────────────┐
-│ ┌─────────────────┐  ┌─────────────────────────┐  ┌─────────────────────┐ │
-│ │   {initials}    │  │ Full Name  Email Address│  │  Account Status     │ │
-│ │ [Change Avatar] │  │ {input}    {input}      │  │ Plan: {plan_badge}  │ │
-│ └─────────────────┘  │ [Save Changes]          │  │ Status: {status}    │ │
-│                      └─────────────────────────┘  │ Member: {date}      │ │
-│ ┌──────────────────────────────────────────────┐  └─────────────────────┘ │
-│ │            Change Password                   │  ┌─────────────────────┐ │
-│ │ Current: {input}                             │  │    Quick Stats      │ │
-│ │ New: {input}  Confirm: {input}               │  │ Domains: {count}    │ │
-│ │ [Update Password]                            │  │ Scans: {count}      │ │
-│ └──────────────────────────────────────────────┘  │ Reports: {count}    │ │
-│                                                   └─────────────────────┘ │
-│ ┌─────────────────────────────────────────────────────────────────────────┤
-│ │                      Danger Zone                                       │ │
-│ │ Once you delete your account, there is no going back                   │ │
-│ │ [Delete Account]                                                       │ │
-│ └─────────────────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+All UI components pull from database:
+- Dashboard metrics from aggregated domain scores
+- Activity history from scans table
+- Reports from S3 with signed URLs
+- Real-time updates via Laravel Reverb
 
-#### 2. Domains Page
-```
-Domains                                          [Scan Now] [Add Domain]
-┌─────────────────────────────────────────────────────────────────────────┐
-│ Domain Name           │ Last Scan Date    │ Security Score │ Actions    │
-├─────────────────────────────────────────────────────────────────────────┤
-│ {domain.url}          │ {scan.date}       │ {score}{grade} │ 👁🔍🗑    │
-│ {domain.display}      │ {time_ago}        │ {color_coded}  │            │
-│                       │                   │                │            │
-│ [Empty State: No domains yet - Add your first domain]                   │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+See **database.md** for schema details.
 
-#### 3. Activity Page
-```
-Activity                                             [Generate Report]
-┌─────────────────────────────────────────────────────────────────────────┐
-│ [All Domains ▼] [Last 30 days ▼]                                       │
-│                                                                         │
-│ Date & Time       │ Domain Name    │ Scan Type │ Score     │ Actions    │
-├─────────────────────────────────────────────────────────────────────────┤
-│ {scan.created_at} │ {domain.url}   │ Full Scan │ {score}   │ 👁📊       │
-│ {time_ago}        │ {display_name} │           │ {grade}   │            │
-│                   │                │           │           │            │
-│ [Empty State: No scan activity - Run your first scan]                  │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+### Trial Management
+- Display banner when trial_ends_at > now()
+- Show days remaining prominently
+- Block scan features after trial expiry
+- Automatic transition to subscription or locked state
 
-#### 4. Reports Page
-```
-Reports                                          [Download Selected]
-┌─────────────────────────────────────────────────────────────────────────┐
-│                               📄                                       │
-│                                                                         │
-│                         No reports yet                                 │
-│                                                                         │
-│           Generate your first security report to get started           │
-│                                                                         │
-│                    [Generate Your First Report]                        │
-│                                                                         │
-│ [Future State with Data]                                                │
-│ Report Name        │ Date Generated │ Type │ Status │ Actions          │
-│ {report.filename}  │ {created_at}   │ PDF  │ Ready  │ ⬇ 👁 🗑          │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+### Error Handling Strategy
 
-#### 5. Subscription/Billing Page
-```
-Billing & Subscription
-┌─────────────────────────────────────────────────────────────────────────┐
-│ ┌───────────────────────────┐ ┌─────────────────────────────────────────┐ │
-│ │      Current Plan         │ │         Usage This Month                │ │
-│ │ {plan.name} {trial_badge} │ │ Domains: {used}/{max} {progress_bar}    │ │
-│ │ ${plan.price}/month       │ │ Scans: {used}/{limit} {progress_bar}    │ │
-│ │ {max_domains} domains     │ │                                         │ │
-│ │ [Change] [Cancel]         │ │         Payment Method                  │ │
-│ └───────────────────────────┘ │ 💳 **** **** **** {last4}               │ │
-│                               │ Expires {month}/{year}                  │ │
-│ ┌─────────────────────────────────────────────────────────────────────┐ │ │
-│ │                    Billing History                                 │ │ │
-│ │ {plan.name} - {month} {year}  [{status}] ${amount}  [⬇]           │ │ │
-│ │ {invoice_date}                                                     │ │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │ │
-│                               │         Need Help?                      │ │
-│                               │ [📧 Contact Support]                    │ │
-│                               └─────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+- Empty states with clear CTAs
+- Graceful degradation for failed scanners
+- User-friendly error messages
+- Support email for critical issues
+- Automatic retry for transient failures
 
-#### 6. Domain Detail Page
-```
-{domain.url}                                             [🔄 New Scan]
-┌─────────────────────────────────────────────────────────────────────────┐
-│ ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────────────────┐ │
-│ │ Overall Score   │ │ SSL/TLS Grade   │ │     Scan Coverage           │ │
-│ │ {total_score}   │ │ {ssl_grade}     │ │ {completion_icon}           │ │
-│ │ /100            │ │ {days_left}     │ │ {coverage_text}             │ │
-│ │ {status_badge}  │ │ {protocol_info} │ │ {scan_type}                 │ │
-│ └─────────────────┘ └─────────────────┘ └─────────────────────────────┘ │
-│                                                                         │
-│ ┌─────────────────────────────┐ ┌─────────────────────────────────────┐ │
-│ │      Security Headers       │ │          DNS & Network              │ │
-│ │ {configured}/{total} config │ │ {dnssec_badge}                      │ │
-│ │ • HSTS {status_badge}       │ │ 📧 Email Security                   │ │
-│ │ • CSP {status_badge}        │ │ {spf_badge} {dmarc_badge}           │ │
-│ │ • X-Frame {status_badge}    │ │ 🔌 Open Ports                       │ │
-│ │ • X-Content {status_badge}  │ │ {port_count} detected               │ │
-│ │ • Referrer {status_badge}   │ │                                     │ │
-│ └─────────────────────────────┘ └─────────────────────────────────────┘ │
-│                                                                         │
-│ Recommended Actions                                                     │
-│ ┌─────────────────────────────────────────────────────────────────────┐ │
-│ │ • {priority_badge} {recommendation_text}                           │ │
-│ │ • {priority_badge} {recommendation_text}                           │ │
-│ │ • {priority_badge} {recommendation_text}                           │ │
-│ └─────────────────────────────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────────────┘
-```
+## Related Documentation
 
-### Complete Data Source Mapping
-
-**Every UI element maps to real database data:**
-
-```php
-// Dashboard Data
-$dashboardData = [
-    'avg_score' => DB::table('domains')
-        ->where('user_id', auth()->id())
-        ->whereNotNull('last_scan_score')
-        ->avg('last_scan_score'),
-    'domain_count' => auth()->user()->domains()->where('is_active', true)->count(),
-    'max_domains' => config('plans.solo.max_domains'), // 10
-    'critical_count' => auth()->user()->domains()->where('last_scan_score', '<', 60)->count(),
-    'last_scan' => auth()->user()->scans()->latest()->with('domain')->first(),
-    'trial_days_remaining' => auth()->user()->trial_ends_at->diffInDays(now()),
-];
-
-// Profile Data
-$profileData = [
-    'initials' => substr(auth()->user()->name, 0, 1) . substr(explode(' ', auth()->user()->name)[1] ?? '', 0, 1),
-    'plan_name' => auth()->user()->subscription_status === 'trialing' ? 'Solo Plan' : 'Active',
-    'domain_count' => auth()->user()->domains()->count(),
-    'monthly_scans' => auth()->user()->scans()->whereMonth('created_at', now()->month)->count(),
-    'reports_count' => auth()->user()->reports()->count(),
-];
-
-// Domain Detail Data
-$domainData = [
-    'total_score' => $domain->latest_scan->total_score ?? null,
-    'ssl_grade' => $domain->latest_scan->modules()->where('module', 'ssl_tls')->first()->raw['grade'] ?? 'Unknown',
-    'headers_configured' => $domain->latest_scan->modules()->where('module', 'security_headers')->first()->score ?? 0,
-    'dnssec_status' => $domain->latest_scan->modules()->where('module', 'dns_email')->first()->raw['dnssec'] ?? false,
-];
-```
-
-### Trial Banner (Conditional Display)
-```
-Displays only when: user.trial_ends_at > now()
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│ 🕒 {plan.name} Trial  {days_remaining} days remaining  {domain_count} of {max_domains} domains  [Upgrade Now] [✕] │
-└─────────────────────────────────────────────────────────────────────────────────┘
-```
-
-### Empty States & Error Handling
-
-**Every page handles missing data appropriately:**
-
-```php
-// Dashboard Empty States
-if ($domainCount === 0) {
-    return view('dashboard')->with('emptyState', [
-        'title' => 'No domains yet',
-        'message' => 'Add your first domain to start monitoring',
-        'action' => 'Add Domain',
-        'route' => route('domains.create')
-    ]);
-}
-
-// Activity Empty State
-if ($scanCount === 0) {
-    return view('activity.index')->with('emptyState', [
-        'title' => 'No scan activity yet',
-        'message' => 'Run your first scan to see results here',
-        'action' => 'Scan Now',
-        'route' => route('scans.create')
-    ]);
-}
-
-// Reports Empty State
-if ($reportCount === 0) {
-    return view('reports.index')->with('emptyState', [
-        'title' => 'No reports yet',
-        'message' => 'Generate your first security report to get started',
-        'action' => 'Generate Report',
-        'route' => route('reports.create')
-    ]);
-}
-```
-
-### Domains Page Layout
-
-#### Header Section
-- Page title and description
-- "Add Domain" and "Scan Now" buttons (top right)
-- Tab filters: "Your Domains" / "All Clients" (note: no clients in MVP)
-
-#### Domains Table
-```
-┌──────────────────────────────────────────────────────────────────┐
-│ CLIENT NAME | DOMAIN NAME           | LAST SCAN DATE | SCORE | ACTIONS │
-├──────────────────────────────────────────────────────────────────┤
-│ Richard     | https://hackerscope.ai| Aug 12, 02:33PM|   85  | 👁 🔍 🗑  │
-└──────────────────────────────────────────────────────────────────┘
-```
-- Client name (note: remove for MVP)
-- Full domain URL with favicon
-- Last scan timestamp
-- Score with color coding
-- Action buttons: View, Scan, Delete
-
-### Activity Page Layout
-
-#### Filters Section
-- "All Domains" dropdown
-- Date range picker (Last 30 days)
-- "Generate Report" button (top right)
-
-#### Activity Table
-- Date & Time column
-- Domain name with client info
-- Scan type badge (Full Scan)
-- Security score with color
-- Actions (View, Generate)
-
-### Reports Page Layout
-- Empty state: "No reports yet"
-- "Generate Your First Report" CTA button
-- Future: Table with report name, date, type, status, actions
-
-### Domain Detail Page Layout
-
-#### Header Section
-- Domain URL as title
-- "New Scan" button
-- Breadcrumb navigation
-
-#### Score Overview Cards
-- Overall Score (large number with grade)
-- SSL/TLS Grade (A+, with days left)
-- Scan Coverage indicator
-
-#### Security Modules Grid
-
-##### Security Headers Module
-- 5/5 configured indicator
-- List of headers with status badges:
-  - HSTS ✓ Set
-  - CSP ✓ Set  
-  - X-Frame-Options ✓ Set
-  - X-Content-Type ✓ Set
-  - Referrer-Policy ✓ Set
-
-##### DNS & Network Module
-- DNSSEC Enabled badge
-- Email Security indicators (SPF, DMARC badges)
-- Open Ports: "0 detected"
-
-#### Recommended Actions Section
-- List of prioritized security improvements
-- How-to guidance for each recommendation
-- Color-coded by severity
-
-### Common UI Patterns
-
-#### Buttons
-- **Primary**: Blue background (#3b82f6), white text
-- **Secondary**: Dark border, white text
-- **Danger**: Red background (#ef4444), white text
-- **Success**: Green background (#22c55e), white text
-
-#### Form Fields
-- Dark background with light border
-- Focus state with blue outline
-- Error states with red border
-
-#### Status Badges
-- **Success**: Green background, white text
-- **Warning**: Orange background, white text
-- **Error**: Red background, white text
-- **Info**: Blue background, white text
+- **Technical Implementation**: See `/docs/technical.md`
+- **UI/UX Specifications**: See `/docs/design.md`
+- **Database Schema**: See `/docs/database.md`
+- **Testing Strategy**: See `/docs/testing.md`
+- **Development Timeline**: See `/docs/execution.md`
 
 #### Loading States
 - Skeleton loading for data tables
@@ -550,7 +249,7 @@ This design system ensures consistency across all pages while maintaining the pr
 ### Revenue Model
 - **SaaS subscription**: Monthly recurring revenue
 - **Single tier**: Simplicity over complexity
-- **Direct billing**: Stripe integration (no Cashier)
+- **Billing**: Laravel Cashier with Stripe integration
 - **Auto-renewal**: Reduced churn
 
 ### Unit Economics (per customer)
@@ -909,123 +608,23 @@ const SCAN_LIMIT = 'unlimited';
 - URL paths ignored (normalized to domain)
 - Duplicate domains prevented per user
 
-## GDPR Compliance & Privacy Features
+## Legal Pages (Simplified for MVP)
 
-### User Privacy Controls
-
-#### Privacy Dashboard
-A dedicated section in user settings for managing privacy preferences:
-- **Data Export**: One-click JSON export of all user data
-- **Account Deletion**: Permanent deletion with confirmation
-- **Consent Management**: Toggle marketing emails, analytics tracking
-- **Data Retention Info**: Clear display of retention policies
-
-#### Cookie Consent Banner
-Displayed on first visit and accessible via footer link:
-```
-This site uses essential cookies for authentication and security scanning.
-Optional cookies help us improve our service.
-[Essential Only] [Accept All] [Customize]
-```
-
-### GDPR User Flows
-
-#### 1. Registration Flow with Consent
-```
-1. User enters email and password
-2. Consent checkboxes displayed (not pre-checked):
-   □ I accept the Terms of Service (required)
-   □ I accept the Privacy Policy (required)
-   □ Send me product updates and security tips (optional)
-3. Registration blocked until required consents given
-4. Consent records stored with timestamp and version
-```
-
-#### 2. Data Export Flow
-```
-1. User navigates to Settings → Privacy
-2. Clicks "Export My Data"
-3. System generates JSON file with all user data
-4. Download link sent via email (expires in 24 hours)
-5. Activity logged in data processing log
-```
-
-#### 3. Account Deletion Flow
-```
-1. User navigates to Settings → Privacy
-2. Clicks "Delete My Account"
-3. Modal appears with warnings:
-   - All domains and scan history will be deleted
-   - This action cannot be undone
-   - Active subscription will be cancelled
-4. User must type "DELETE" and enter password
-5. Account marked for deletion, processed within 24 hours
-6. Confirmation email sent
-```
-
-#### 4. Consent Withdrawal Flow
-```
-1. User navigates to Settings → Privacy
-2. Unchecks consent toggles (e.g., marketing emails)
-3. System immediately stops relevant processing
-4. Withdrawal recorded with timestamp
-5. User can re-consent at any time
-```
-
-### Privacy Policy Requirements
-
-The privacy policy page (`/privacy`) must include:
-
-#### Data Collection
-- **Account Data**: Email, password (hashed), IP addresses
-- **Domain Data**: URLs monitored, scan configurations
-- **Scan Results**: Security scores, vulnerabilities found
-- **Usage Data**: Login times, feature usage (if consented)
-- **Payment Data**: Processed by Stripe, not stored locally
-
-#### Data Usage
-- **Primary Purpose**: Providing security scanning services
-- **Secondary**: Service improvement (aggregated, anonymized)
-- **Marketing**: Only with explicit consent
-- **Legal**: Compliance with laws and regulations
-
-#### Data Sharing
-- **No Selling**: User data is never sold
-- **Service Providers**: Stripe (payments), AWS (infrastructure)
-- **Legal Requirements**: Only when legally required
-- **Business Transfers**: In case of merger/acquisition
-
-#### User Rights (GDPR Articles 15-22)
-- **Access**: Download all your data anytime
-- **Rectification**: Update incorrect information
-- **Erasure**: Delete account and all data
-- **Portability**: Export data in machine-readable format
-- **Restriction**: Limit how we process your data
-- **Objection**: Opt-out of certain processing
-
-#### Data Security
-- **Encryption**: TLS 1.3 in transit, AES-256 at rest
-- **Access Control**: Role-based, principle of least privilege
-- **Monitoring**: 24/7 security monitoring
-- **Incident Response**: Notification within 72 hours
-
-#### Contact Information
-- **Data Controller**: Achilleus Security Ltd.
-- **DPO Email**: privacy@achilleus.so
-- **Support**: security@achilleus.so
-- **Supervisory Authority**: [Relevant EU authority]
-
-### Terms of Service Requirements
-
-The terms page (`/terms`) must include:
+### Terms of Service
+Basic terms page (`/terms`) includes:
 - Service description and limitations
 - Acceptable use policy
 - Payment terms and refund policy
 - Liability limitations
 - Intellectual property rights
 - Termination conditions
-- Governing law and disputes
-- Changes to terms notification
+
+### Privacy Policy
+Basic privacy page (`/privacy`) includes:
+- What data we collect (email, domains, scan results)
+- How we use it (to provide the service)
+- We don't sell data
+- Contact: support@achilleus.so
 
 ## What This Project Does NOT Include
 
@@ -1039,8 +638,8 @@ The terms page (`/terms`) must include:
 ❌ **Laravel Cashier** - Direct Stripe API integration
 ❌ **Horizon** - Laravel Cloud handles queues
 ❌ **Complex Support System** - Simple email only for MVP
-❌ **Comprehensive Legal System** - Basic terms acceptance only
-❌ **Email System** - Contact support via security@achilleus.so only
+❌ **Legal Compliance Features** - Basic terms and privacy pages only
+❌ **Email System** - Contact support via support@achilleus.so only
 
 ## Conclusion
 
