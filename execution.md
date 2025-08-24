@@ -1,888 +1,639 @@
-# Achilleus Execution Plan
+# Achilleus Development Plan - 16-Phase Approach
 
-## Project Overview
-Build a security monitoring SaaS from scratch using Laravel 12 with React 19 starter kit. The application provides automated security scanning for up to 10 domains at $27/month, targeting developers and freelancers who need affordable security monitoring.
-
-**Target Timeline**: 21 days from empty repository to production MVP
-**Development Approach**: Test-Driven Development (TDD) with security-first implementation
-**Starter Kit**: Laravel 12 with React starter kit from https://laravel.com/docs/12.x/starter-kits
-
-## Development Philosophy
-
-### Core Principles
-- **Security First**: Every feature must prioritize security over convenience
-- **Test-Driven Development**: Write tests before implementation
-- **Progressive Enhancement**: Build core functionality first, polish later
-- **Database-Driven UI**: All UI components must be backed by real data
-- **SSRF Protection**: All external requests must be validated
-
-## AI-Enhanced Development Workflow with Laravel Boost
-
-### Boost-Powered Development Process
-
-With Laravel Boost active, AI assistants have deep context about your project:
-
-```bash
-# Start Boost MCP Server (run once per session)
-php artisan boost:mcp
-
-# AI can now access:
-# - Your actual database schema and data
-# - All routes, middleware, and controllers
-# - Configuration values and environment settings
-# - Error logs and debugging information
-# - Laravel 12 documentation specific to your versions
-```
-
-### Enhanced TDD Workflow with Boost
-
-```bash
-# 1. ANALYZE - AI inspects existing code patterns
-boost:tinker "glob(app_path('Services/Scanners/*.php'))"
-boost:query "SELECT DISTINCT module FROM scan_modules"
-
-# 2. PLAN - AI understands actual requirements
-boost:docs "Laravel 12 testing"
-boost:routes --name=domains
-
-# 3. TEST - AI writes tests using real fixtures
-boost:tinker "Domain::factory()->make()->toArray()"
-php artisan make:test DomainScannerTest
-
-# 4. CODE - AI implements following your patterns
-boost:config app.timezone
-boost:logs --tail=20
-
-# 5. VERIFY - AI checks against actual data
-boost:query "SELECT * FROM scans WHERE status = 'failed'"
-php artisan test --parallel
-```
-
-## Development Workflow
-
-For EVERY subtask, follow this workflow:
-
-```bash
-# 1. PLAN - Understand requirements
-achilleus-plan [phase].[subtask]   # Review requirements, check technical.md
-
-# 2. TEST - Write tests first (TDD)
-achilleus-test [phase].[subtask]   # Write comprehensive tests
-
-# 3. CODE - Implement functionality
-achilleus-code [phase].[subtask]   # Build based on tests
-
-# 4. VERIFY - Ensure quality
-achilleus-verify [phase].[subtask] # Run tests, check performance
-```
+**Target**: Security monitoring SaaS for developers  
+**Timeline**: 28-30 days  
+**Test Goal**: 365 tests total  
+**Architecture**: Laravel 12 + React + Inertia.js + WorkOS Auth on Laravel Cloud
 
 ---
 
-## Phase 0: Repository Setup (Day 0 - Pre-Development)
+## Phase 1: Project Setup & Authentication
+**Duration**: Day 1  
+**Tests**: 20 tests
 
-### ✅ DO
-- Use Laravel 12 with React 19 starter kit
-- Install all required packages before starting development
-- Configure dark theme from the beginning
-- Set up proper git workflow with meaningful commits
-- Initialize testing infrastructure early
+### Goals
+- Laravel 12 installation with React starter kit
+- WorkOS authentication integration (Google OAuth, Passkeys, Magic Auth)
+- User registration/login system with trial activation
+- Authentication middleware setup
 
-### ❌ DON'T
-- Skip package version verification
-- Use outdated Laravel or React versions  
-- Forget to configure dark theme initially
-- Start coding without proper project structure
+### Implementation Hints
+- **Starter Kit**: Laravel Breeze with React/Inertia preset
+- **WorkOS Integration**: Use `workos/workos-php` package
+- **Trial Logic**: Set `trial_ends_at = now()->addDays(14)` on user creation
+- **Middleware**: Create `EnsureTrialValid` middleware for protected routes
 
-### Subtasks
+### Key Deliverables
+- Working Laravel + Inertia + React foundation
+- WorkOS authentication with Google OAuth, Passkeys, and Magic Auth
+- User registration with automatic 14-day trial activation
+- Secure login/logout functionality
+- Basic dashboard skeleton extending starter template
 
-#### 0.1 Initial Laravel Project Setup
-- Create new directory `achilleus`
-- Install Laravel 12 with React starter kit (https://laravel.com/docs/12.x/starter-kits)
-- Verify React 19, Inertia.js, and Tailwind CSS are included
-- Confirm TypeScript configuration is present
-- Test default authentication pages work
+### Key Files to Create
+- `app/Http/Middleware/EnsureTrialValid.php`
+- `app/Services/WorkOSService.php`
+- `resources/js/Pages/Auth/` (Login/Register components)
 
-#### 0.2 Laravel Boost Setup (AI Development Assistant)
-- Install Laravel Boost (composer require laravel/boost --dev)
-- Run boost:install to initialize AI guidelines
-- Configure .ai/guidelines/ directory structure
-- Test MCP server with php artisan boost:mcp
-- Verify Boost tools work (tinker, query, docs, logs)
-- Create custom Achilleus guidelines in .ai/guidelines/
-
-#### 0.3 Package Installation  
-- Install Laravel Cashier for Stripe billing (laravel/cashier)
-- Install Laravel Precognition for live validation (laravel/precognition)
-- Install Laravel Socialite for OAuth (laravel/socialite)
-- Install PDF generation (barryvdh/laravel-dompdf)
-- Install development tools (laravel/pint, pestphp/pest)
-- Install Playwright for E2E testing
-- Run Cashier migrations (php artisan migrate:cashier)
-- composer require resend/resend-php
-
-#### 0.4 Shadcn/ui Configuration
-- Initialize Shadcn/ui with dark theme
-- Install core components (button, card, form, input, select, badge, alert)
-- Install additional components (dialog, table, tabs, progress, tooltip)
-- Verify dark theme classes in tailwind.config.js
-- Test component rendering
-
-#### 0.5 Project Structure Setup
-- Create marketing directory for landing page
-- Download and configure Salient template
-- Create scanner directory structure (app/Contracts/Scanners, app/Data, app/Support)
-- Set up testing directories (Unit, Feature, E2E)
-- Configure .env.example with all required variables
-
-#### 0.6 Version Control Setup
-- Verify git repository is initialized
-- Create comprehensive .gitignore
-- Make initial commit with all setup
-- Add remote repository
-- Push to main branch
+### Test Focus
+- WorkOS authentication flows
+- Trial period activation on registration
+- Login/logout flows across auth methods
+- Middleware protection
 
 ---
 
-## Phase 1: Foundation & Security (Days 1-2)
+## Phase 2: Database Schema & Models
+**Duration**: Days 2-3  
+**Tests**: 30 tests  
+**Reference**: `/docs/database.md`
 
-### ✅ DO
-- Create all database migrations before models
-- Implement SSRF protection before any external calls
-- Test with real data, not mocks
-- Use proper Laravel conventions
-- Follow TDD strictly
+### Goals
+- Complete PostgreSQL schema with UUID primary keys
+- Eloquent models with relationships
+- Business rule enforcement at model level
+- Factory and seeder creation
 
-### ❌ DON'T
-- Skip writing tests first
-- Make external HTTP requests without NetworkGuard
-- Create models without migrations
-- Hardcode any configuration values
-- Skip validation on user inputs
+### Implementation Hints
+- **UUIDs**: Use `$keyType = 'string'` and `$incrementing = false` in models
+- **Domain Limit**: Add `static::creating()` hook in User model to check count
+- **Soft Deletes**: Use `SoftDeletes` trait for domains/scans (data retention)
+- **Indexes**: Add composite indexes for user_id + created_at queries
 
-### What to Test
-- Database schema constraints and relationships
-- SSRF protection with localhost, private IPs (192.168.x, 10.x), cloud metadata (169.254.169.254)
-- Trial period calculation (exactly 14 days from registration)
-- Model relationships and scopes
-- Configuration values and defaults
+### Key Deliverables
+- Users, domains, scans, scan_modules, reports tables
+- Model relationships (User → Domain → Scan → ScanModule)
+- Business rules: 10 domain limit, HTTPS validation, trial logic
+- Comprehensive factories for testing
 
-### What NOT to Test
-- Laravel framework functionality
-- Third-party package internals
-- Database engine behavior
-- Simple getters/setters without logic
+### Key Files to Create
+- `database/migrations/` (UUID migrations)
+- `app/Models/` (User, Domain, Scan, ScanModule, Report)
+- `database/factories/` (comprehensive test data)
 
-### Subtasks
-
-#### 1.1 Database Schema
-- Users table with trial_ends_at, stripe_customer_id, subscription_status, provider fields for OAuth
-- Domains table with url, email_mode, last_scan_score, is_active
-- Scans table with status, total_score, grade, timestamps
-- Scan_modules table with module type, score, status, raw JSONB data
-- Reports table with filename, file_path, file_size
-- Subscription_items table for Laravel Cashier
-
-#### 1.2 Models & Relationships
-- User model with domains(), scans(), reports() relationships
-- Domain model with user(), scans(), latestScan() relationships
-- Scan model with domain(), user(), modules() relationships
-- ScanModule model with scan() relationship
-- Model factories for all models
-
-#### 1.3 Laravel Package Configuration
-- Configure Laravel Cashier with Stripe keys and webhook endpoint
-- Set up Laravel Socialite providers (GitHub, Google) with OAuth credentials
-- Configure Laravel Precognition middleware for form validation endpoints
-- Create Billable trait configuration on User model for Cashier
-
-#### 1.4 Security Infrastructure (NetworkGuard)
-- NetworkGuard class for SSRF protection
-- Block localhost (127.0.0.1, ::1)
-- Block private IPs (192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12)
-- Block cloud metadata endpoints (169.254.169.254)
-- Custom exception classes (RetryableException, ConfigurationException, SecurityException)
-
-#### 1.5 Authentication Enhancement
-- Registration sets trial_ends_at to 14 days from now
-- Trial banner component for authenticated users
-- Shadcn/ui components in auth pages
-- Subscription status tracking
-- Trial expiry calculations
-
-#### 1.6 Configuration Setup
-- Scoring config with weights (SSL: 40%, Headers: 30%, DNS: 30%)
-- Grade thresholds (A+: 95+, A: 90+, B+: 85+, B: 80+, C: 70+, D: 60+, F: <60)
-- Domain limits (max 10 per user)
-- Rate limits (10 scans/minute per user)
-- Environment variables for all services
+### Test Focus
+- Model relationships and constraints
+- Business rule validation (10 domain limit, trial logic)
+- Factory data generation
+- Database performance queries (<50ms target)
 
 ---
 
-## Phase 2: Scanner Implementation (Days 3-5)
+## Phase 3: Security Infrastructure & NetworkGuard
+**Duration**: Days 4-5  
+**Tests**: 25 tests  
+**Reference**: `/docs/technical.md` → "NetworkGuard" & "AbstractScanner"
 
-### ✅ DO
-- Test with real external services (badssl.com, github.com)
-- Implement proper timeout and retry mechanisms
-- Follow the AbstractScanner pattern for all scanners
-- Use SSRF protection on every external request
-- Test both success and failure scenarios
+### Goals
+- SSRF protection via NetworkGuard
+- AbstractScanner base class with retry logic
+- Exception hierarchy for scanner errors
+- Rate limiting framework
 
-### ❌ DON'T
-- Mock external services for integration tests
-- Skip timeout configuration
-- Hardcode scoring weights
-- Make synchronous external requests
-- Ignore SSL certificate validation
+### Implementation Hints
+- **SSRF Protection**: Use `filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE)`
+- **Rate Limiting**: Laravel's `Cache::throttle()` with Redis backend
+- **Retry Logic**: Progressive backoff (1s, 2s, 4s) in AbstractScanner
+- **Exception Types**: Extend base `ScannerException` for categorization
 
-### What to Test
-- Scanner behavior with expired certificates (expired.badssl.com)
-- Scanner behavior with wrong hostname (wrong.host.badssl.com)
-- Header detection with well-configured sites (github.com)
-- DNS resolution with real domains
-- Timeout and retry mechanisms
+### Key Deliverables
+- NetworkGuard SSRF validation (blocks private IPs, localhost, metadata endpoints)
+- AbstractScanner with timeout/retry/error handling
+- RetryableException, ConfigurationException, SecurityException classes
+- Per-host rate limiting system
+
+### Key Files to Create
+- `app/Support/NetworkGuard.php`
+- `app/Services/Scanners/AbstractScanner.php`
+- `app/Exceptions/Scanner/` (exception hierarchy)
+- `app/Contracts/Scanners/Scanner.php` (interface)
+
+### Test Focus
+- SSRF protection against various attack vectors
+- Scanner retry logic and timeout handling
+- Exception categorization accuracy
 - Rate limiting enforcement
 
-### What NOT to Test
-- External service availability
-- DNS server response times
-- Third-party SSL libraries
-- Network connectivity
+---
 
-### Subtasks
+## Phase 4: SSL/TLS Scanner
+**Duration**: Days 6-7  
+**Tests**: 30 tests  
+**Reference**: `/docs/technical.md` → "SSL/TLS Scanner"
 
-#### 2.1 Scanner Architecture
-- Scanner interface with name(), getWeight(), scan() methods
-- ModuleResult data class with score, status, raw data
-- AbstractScanner base class with retry logic
-- Rate limiting per scanner per host
-- Scanner service provider for dependency injection
+### Goals
+- Complete SSL/TLS security analysis (40% scoring weight)
+- Certificate validation and expiry monitoring
+- Protocol and cipher analysis
+- Certificate chain verification
 
-#### 2.2 SSL/TLS Scanner (40% weight)
-- Certificate expiration checking (0 points if expired)
-- Hostname verification (CN and SAN)
-- Protocol version detection (TLS 1.3 bonus, TLS 1.0/1.1 penalty)
-- Cipher suite strength analysis
-- Key size validation (minimum 2048-bit RSA)
+### Implementation Hints
+- **Certificate Analysis**: Use `openssl_x509_parse()` for certificate details
+- **Protocol Testing**: `stream_socket_client()` with specific `crypto_method` flags
+- **Chain Validation**: Verify issuer trust chain to known root CAs
+- **Scoring Logic**: Expiry penalty (-30 expired, -15 <7 days, -5 <30 days)
+- **SAN Parsing**: Extract Subject Alternative Names from certificate extensions
 
-#### 2.3 Security Headers Scanner (30% weight)
-- HSTS detection and max-age validation
-- CSP presence and unsafe directive detection
-- X-Frame-Options verification
-- X-Content-Type-Options checking
-- Referrer-Policy assessment
+### Key Deliverables
+- Certificate expiration warnings (30/7/1 days)
+- Hostname verification with SAN support
+- TLS protocol analysis (prefer 1.3, deprecate 1.0/1.1)
+- Cipher strength and Perfect Forward Secrecy validation
+- Full certificate chain cryptographic verification
 
-#### 2.4 DNS/Email Scanner (30% weight)
-- SPF record validation
-- DKIM verification with custom selectors
-- DMARC policy analysis
-- MX record checking (if email_mode='expected')
-- CAA record verification
+### Key Files to Create
+- `app/Services/Scanners/SslTlsScanner.php`
+- `app/Data/SslCertificateInfo.php` (certificate data structure)
+- `app/Support/CertificateAnalyzer.php` (certificate parsing logic)
 
-#### 2.5 Scoring Engine
-- Weighted score calculation
-- Grade assignment based on thresholds
-- Weight redistribution when modules fail
-- Score caching mechanism
-- Historical score tracking
+### Test Focus
+- Certificate validation edge cases
+- Protocol version scoring accuracy
+- Cipher suite security analysis
+- Chain validation with various CA structures
 
 ---
 
-## Phase 3: Scan Processing & Jobs (Days 6-7)
+## Phase 5: Security Headers Scanner
+**Duration**: Days 8-9  
+**Tests**: 25 tests  
+**Reference**: `/docs/technical.md` → "Security Headers Scanner"
 
-### ✅ DO
-- Implement async job processing with Laravel Cloud workers
-- Add comprehensive logging for debugging
-- Handle failures gracefully with retry logic
-- Update scan status throughout the process
-- Use Laravel Cloud's auto-scaling queue workers
+### Goals
+- HTTP security header analysis (30% scoring weight)
+- HSTS, CSP, X-Frame-Options, X-Content-Type-Options validation
+- Advanced directive parsing and scoring
+- Information disclosure detection
 
-### ❌ DON'T
-- Process scans synchronously
-- Skip job failure handling
-- Forget status updates
-- Skip timeout configuration
-- Manually manage queue infrastructure
+### Implementation Hints
+- **Header Extraction**: Parse `$http_response_header` from `file_get_contents()`
+- **CSP Parsing**: Split by semicolons, then spaces for directive analysis
+- **HSTS Validation**: Regex `/max-age=(\d+)/` to extract duration
+- **Unsafe CSP Detection**: Check for 'unsafe-inline', 'unsafe-eval', '*' in policies
 
-### What to Test
-- Job dispatch and processing logic
-- Retry logic with failures
-- Scan status transitions (pending → running → completed/failed)
-- Job timeout handling
-- Scanner orchestration
+### Key Deliverables
+- HSTS analysis with max-age, includeSubDomains, preload validation
+- CSP parsing with unsafe directive detection
+- Security header presence/absence scoring
+- Server information disclosure warnings
 
-### What NOT to Test
-- Laravel Cloud queue infrastructure
-- Worker auto-scaling
-- Redis connection
+### Key Files to Create
+- `app/Services/Scanners/SecurityHeadersScanner.php`
+- `app/Support/HeaderAnalyzer.php` (header parsing utilities)
+- `app/Data/SecurityHeaders.php` (header data structure)
 
-### Subtasks
-
-#### 3.1 OAuth Authentication (Laravel Socialite)
-- Configure GitHub OAuth application
-- Configure Google OAuth application  
-- Implement SocialAuthController with redirect/callback methods
-- Handle account linking for existing emails
-- Set trial_ends_at for new OAuth users
-- Add "Sign in with GitHub/Google" buttons to login page
-
-#### 3.2 Scan Job Implementation (RunDomainScan)
-- Job class with proper timeout (120 seconds)
-- Retry configuration (3 attempts, exponential backoff)
-- Scan status updates (pending → running → completed/failed)
-- Scanner execution orchestration
-- Error message capture and logging
-- Domain last_scan_score update
-
-#### 3.3 Scan Orchestrator Service
-- Scanner dependency injection
-- Sequential scanner execution with error isolation
-- Individual scanner failure handling
-- Score aggregation and grade calculation
-- Module result storage in JSONB
-- Scan completion notifications preparation
-
-#### 3.3 HTTP Client Service
-- Secure HTTP client with NetworkGuard integration
-- Timeout configuration (30 seconds default)
-- Retry logic (2 attempts with exponential backoff)
-- User agent setting for scanner identification
-- HTTPS-only redirect following
-- Response caching for duplicate requests
-
-#### 3.4 Rate Limiting Implementation
-- User-level: 10 scans/minute via Laravel middleware
-- Scanner-level: Per-host limits in AbstractScanner
-- SSL Scanner: 5 requests/minute per host
-- Headers Scanner: 8 requests/minute per host
-- DNS Scanner: 15 requests/minute per host
-- Rate limit exceeded handling with proper errors
-
-#### 3.5 Background Processing Setup
-- Configure Laravel Cloud queue workers in deployment
-- Set appropriate memory and timeout limits
-- Failed job handling and notifications
-- Job monitoring and health checks
-- Queue priority for different job types
+### Test Focus
+- Header parsing accuracy across various formats
+- CSP directive security analysis
+- Scoring algorithm correctness
+- Edge cases in header configurations
 
 ---
 
-## Phase 4: Complete Backend API (Days 8-9)
+## Phase 6: DNS/Email Scanner
+**Duration**: Days 10-11  
+**Tests**: 30 tests  
+**Reference**: `/docs/technical.md` → "DNS/Email Scanner"
 
-### ✅ DO
-- Validate all URLs are HTTPS only
-- Enforce 10 domain limit strictly
-- Normalize URLs for deduplication
-- Use proper authorization policies
-- Implement domain ownership validation
+### Goals
+- DNS security and email authentication (30% scoring weight)
+- SPF, DKIM, DMARC validation
+- DNSSEC trust chain verification
+- CAA record analysis
 
-### ❌ DON'T
-- Allow HTTP domains
-- Skip domain ownership validation
-- Allow duplicate domains
-- Trust user input without validation
-- Bypass domain limits
+### Implementation Hints
+- **DNS Queries**: Use `dns_get_record()` with specific types (TXT, CAA, DNSKEY)
+- **SPF Parsing**: Look for `v=spf1` prefix, check for `-all` vs `~all` vs `+all`
+- **DKIM Selectors**: Try common ones: 'default', 'google', 'k1', 'k2', 'mandrill'
+- **DMARC Policy**: Parse `_dmarc.domain.com` TXT records for policy extraction
+- **DNSSEC**: Extended timeout (35s) to prevent false negatives
 
-### What to Test
-**See `/docs/testing.md` for complete testing patterns**
-- Domain limit enforcement (max 10)
-- URL normalization (remove www, trailing slash)
-- HTTPS-only validation
-- Authorization policies
-- Duplicate prevention
+### Key Deliverables
+- SPF policy analysis with selector validation
+- DKIM key discovery using common selectors
+- DMARC policy evaluation with reporting analysis
+- Comprehensive DNSSEC validation with fallback methods
+- Email/non-email domain handling
 
-### What NOT to Test
-- DNS resolution of domains
-- SSL certificate validity
-- Domain registrar APIs
+### Key Files to Create
+- `app/Services/Scanners/DnsEmailScanner.php`
+- `app/Support/DnsAnalyzer.php` (DNS query utilities)
+- `app/Data/EmailSecurityInfo.php` (email auth data structure)
 
-### Subtasks
-
-#### 4.1 Live Form Validation (Laravel Precognition)
-- Configure HandlePrecognitiveRequests middleware
-- Add Precognition to DomainController store/update methods
-- Implement StoreDomainRequest with complex validation rules
-- Add domain reachability validation
-- Configure frontend with laravel-precognition-react-inertia
-
-#### 4.2 Domain Management API
-- Domain model with URL normalization (lowercase, remove protocol/www/trailing slash)
-- Domain scopes (active, forUser) and computed attributes
-- StoreDomainRequest with HTTPS-only and SSRF validation
-- DomainController with full CRUD operations
-- Domain policy for authorization
-
-#### 4.3 Scan Management API
-- DomainScanController for triggering scans
-- Single domain scan endpoint
-- Bulk scan all domains endpoint
-- Scan status and history endpoints
-- Real-time scan progress via Reverb preparation
-
-#### 4.4 Dashboard API
-- DashboardController with metrics endpoints
-- Average security score calculation
-- Active domains count and critical issues
-- Recent scan activity endpoint
-- Trend data for last 7/30/90 days
-
-#### 4.5 Reports API
-- ReportController for PDF generation
-- Report generation job dispatch
-- Report download with signed URLs
-- Report history and management
-- Generation limits (10/day) enforcement
-
-#### 4.6 User & Billing API
-- Profile update endpoints
-- Subscription status endpoint
-- Trial days remaining calculation
-- Payment method management preparation
-- Billing history endpoint preparation
+### Test Focus
+- SPF/DKIM/DMARC parsing accuracy
+- DNSSEC validation reliability (prevent false negatives)
+- Multiple validation method fallbacks
+- Domain configuration flexibility
 
 ---
 
-## Phase 5: Complete Frontend UI (Days 10-13)
+## Phase 7: Scan Orchestration & Job Queue
+**Duration**: Days 12-14  
+**Tests**: 30 tests  
+**Reference**: `/docs/technical.md` → "ScanOrchestrator" & Jobs  
+**WebSocket Reference**: https://laravel.com/docs/12.x/reverb
 
-### ✅ DO
-- Build ALL pages to create a complete MVP
-- Connect every UI component to real backend APIs
-- Implement all user flows end-to-end
-- Use Shadcn/ui consistently throughout
-- Ensure every feature is usable and testable
+### Goals
+- Coordinated scanner execution with weighted scoring
+- Asynchronous job processing
+- Real-time progress updates via WebSockets
+- Error aggregation and grade calculation
 
-### ❌ DON'T
-- Leave any pages as "coming soon"
-- Use placeholder/fake data anywhere
-- Skip any critical user flows
-- Leave broken navigation links
-- Deploy without complete functionality
+### Implementation Hints
+- **WebSocket Events**: `scan.started`, `scan.progress`, `scan.completed`, `scan.failed`
+- **Progress Payload**: `{domain_id, scan_id, progress_percent, current_module, eta_seconds}`
+- **Job Retry Logic**: 3 attempts with exponential backoff (1s, 2s, 4s)
+- **Weight Redistribution**: Proportional reallocation when scanners fail
+- **Reverb Broadcasting**: Use `broadcast(new ScanProgressEvent($scan))`
 
-### What to Test
-- Dashboard data aggregation accuracy
-- Empty state rendering
-- Navigation flow
-- Responsive breakpoints
-- Data caching
+### Key Deliverables
+- ScanOrchestrator service with 40/30/30 weight distribution
+- RunDomainScan job with timeout/retry logic
+- Laravel Reverb WebSocket integration for progress
+- Grade calculation (A+ to F) based on weighted scores
+- Weight redistribution when scanners fail
 
-### What NOT to Test
-- CSS styling details
-- Animation timing
-- Browser rendering
-- Shadcn/ui internals
+### Key Files to Create
+- `app/Services/ScanOrchestrator.php`
+- `app/Jobs/RunDomainScan.php`
+- `app/Events/ScanProgressEvent.php` (WebSocket broadcast event)
+- `resources/js/hooks/useScanProgress.ts` (React WebSocket hook)
 
-### Subtasks
-
-#### 5.1 Core Layout & Navigation
-- AuthenticatedLayout with dark theme
-- Sidebar navigation (Dashboard, Domains, Activity, Reports, Billing)
-- User menu dropdown (Profile, Billing, Sign Out)
-- Mobile responsive hamburger menu
-- Trial/subscription status banner
-
-#### 5.2 Dashboard Page (Complete)
-**See `/docs/design.md` for complete UI specifications**
-- Four metric cards with real data (Score, Domains, Last Scan, Critical Issues)
-- Security trends chart using Recharts (7/30/90 day views)
-- Recent activity feed with scan results
-- Quick actions (Add Domain, Run All Scans, Generate Report)
-- Empty state for new users with CTA
-
-#### 5.3 Domains Management (Complete)
-- Domains/Index with DataTable component
-- Add Domain dialog with React Hook Form + Zod
-- Domain detail modal with scan history
-- Scan trigger button with loading states
-- Bulk actions (scan all, delete selected)
-- Real-time scan progress with Reverb
-
-#### 5.4 Activity & Scan Results (Complete)
-- Activity/Index with filterable scan history
-- Scan detail page with module breakdowns
-- Security grade display with color coding
-- Issue list grouped by severity
-- Recommendations with actionable steps
-- Export to CSV functionality
-
-#### 5.5 Reports Page (Complete)
-- Reports/Index with generation history
-- Generate Report dialog with options
-- Download buttons with loading states
-- Report preview (if feasible)
-- Generation limit indicator (X/10 today)
-
-#### 5.6 Billing Page (Complete)
-- Current plan display (Trial/Active/Cancelled)
-- Days remaining in trial with upgrade CTA
-- Subscription management buttons
-- Payment method section (placeholder for Stripe)
-- Billing history table
-- Cancel subscription flow
-
-#### 5.7 Profile & Settings (Complete)
-- Profile edit form (name, email, timezone)
-- Password change form
-- Email notification preferences
-- Account deletion option
-- API keys section (future enhancement)
-
-#### 5.8 Empty States & Error Handling
-- Empty states for all lists with helpful CTAs
-- Loading skeletons for all async operations
-- Error boundaries with user-friendly messages
-- 404 page with navigation back
-- Offline state handling
+### Test Focus
+- Weighted scoring accuracy
+- Job processing reliability
+- WebSocket message delivery
+- Error handling in scanner failures
 
 ---
 
-## Phase 6: Billing & Subscription with Laravel Cashier (Days 14-15)
+## Phase 8: Core UI (Dashboard + Domain List)
+**Duration**: Days 15-17  
+**Tests**: 30 tests  
+**Reference**: `/docs/design.md` + shadcn/ui documentation
 
-### ✅ DO
-- Use Laravel Cashier for all Stripe operations
-- Configure webhook endpoint for Stripe events
-- Handle all subscription lifecycle states
-- Test with Stripe test mode
-- Implement proper trial handling
+### Goals
+- Essential interface extending Laravel React starter template (preserve existing layout/navigation)
+- Dashboard with security metrics cards using existing components
+- Domain list with responsive design
+- Real-time updates integration
+- Remove 'Repository' from sidebar, keep 'Documentation'
 
-### ❌ DON'T
-- Store payment data locally
-- Skip webhook verification
-- Ignore subscription states
-- Use production keys in development
-- Allow access after trial/subscription expiry
+### Implementation Hints
+- **Template Extension**: Keep existing `resources/js/Layouts/AuthenticatedLayout.tsx`
+- **Card Components**: Use `@/components/ui/card` for dashboard metrics
+- **Charts**: Install `recharts` for trend visualization with Shadcn chart components
+- **Real-time**: Use `useScanProgress` hook from Phase 7 for live updates
+- **Responsive Tables**: Shadcn Table component with mobile card fallback at <768px
 
-### What to Test
-- Subscription creation flow
-- Payment method updates
-- Webhook signature verification
-- Trial to paid conversion
-- Subscription cancellation
+### Key Deliverables
+- Dashboard cards: Overall Score, Domain Count, Last Scan, Issues (using existing card components)
+- Security score trend charts (7d/30d/90d/1y) with shadcn/ui charts
+- Responsive domain list (table on desktop, cards on mobile)
+- Real-time scan progress indicators
+- Preserve existing dark theme functionality with security-specific color coding
+- Sidebar navigation: Remove 'Repository', keep 'Documentation'
 
-### What NOT to Test
-- Stripe API internals
-- Payment processing
-- Bank transfers
-- Credit card validation
+### Key Files to Create
+- `resources/js/Pages/Dashboard.tsx` (main dashboard)
+- `resources/js/Pages/Domains/Index.tsx` (domain list)
+- `resources/js/Components/SecurityScoreCard.tsx`
+- `resources/js/Components/DomainTable.tsx`
+- `resources/js/Components/SecurityScoreChart.tsx`
 
-### Subtasks
+### Test Focus
+- Component rendering and data display
+- Real-time update functionality
+- Responsive design breakpoints
+- Chart data visualization accuracy
 
-#### 6.1 Laravel Cashier Configuration
-- Install and configure Laravel Cashier
-- Add Billable trait to User model
-- Run Cashier migrations for subscription tables
-- Configure Stripe keys and webhook secret
-- Set up $27/month price in Stripe dashboard
+---
 
-#### 6.2 Subscription Management with Cashier
-- BillingService with createSubscription, swapPlan, cancel methods
-- SubscriptionController using Cashier methods
-- Payment method setup with Stripe Elements
-- Trial to paid conversion handling
-- Subscription portal integration
+## Phase 9: Domain Detail + Scan Results
+**Duration**: Days 18-19  
+**Tests**: 25 tests  
+**Reference**: `/docs/design.md` → "Domain Detail Layout"
 
-#### 6.3 Webhook Processing with Cashier
-- Configure Cashier webhook route
-- Extend WebhookController for custom events
-- Handle subscription lifecycle events
-- Payment failure notifications
-- Grace period management
+### Goals
+- Comprehensive scan result presentation
+- Domain configuration management
+- Historical data visualization
+- Actionable security recommendations
 
-#### 6.4 Billing UI
-- Billing/Index page
-- Current plan display
+### Implementation Hints
+- **Module Cards**: Use Shadcn Card for each scanner module (SSL, Headers, DNS)
+- **Status Icons**: Lucide icons - CheckCircle (✅), AlertTriangle (⚠️), XCircle (❌)
+- **Expandable Sections**: Shadcn Collapsible for detailed findings
+- **Configuration Forms**: Shadcn Form components with validation
+- **Historical Charts**: Mini trend charts for score history per module
+
+### Key Deliverables
+- Modular scan results display per scanner
+- SSL/TLS certificate details with expiration tracking
+- Security headers explanation in plain language
+- DNS/email authentication status with guidance
+- Historical score trends and drill-down analysis
+- Domain-specific settings (email mode, DKIM selector)
+
+### Key Files to Create
+- `resources/js/Pages/Domains/Show.tsx` (domain detail page)
+- `resources/js/Components/ScanModuleCard.tsx`
+- `resources/js/Components/DomainSettings.tsx`
+- `resources/js/Components/ScanHistoryChart.tsx`
+
+### Test Focus
+- Complex data presentation accuracy
+- Historical data visualization
+- Domain configuration validation
+- User interaction flows
+
+---
+
+## Phase 10: Settings + Profile + Activity
+**Duration**: Day 20  
+**Tests**: 25 tests
+
+### Goals
+- User account management
+- Notification preferences
+- Activity audit trail
+- Security settings
+
+### Implementation Hints
+- **Settings Layout**: Extend existing template settings structure
+- **Tab Navigation**: Use Shadcn Tabs component for settings sections
+- **Activity Log**: Table with pagination showing user actions
+- **Form Validation**: Laravel Precognition for real-time validation
+- **Data Export**: Generate CSV/JSON export of user data
+
+### Key Deliverables
+- Profile management with email verification
+- Granular notification preferences
+- Activity history with audit trail
+- Account security settings
+- Data export functionality
+
+### Key Files to Create
+- `resources/js/Pages/Settings/Profile.tsx`
+- `resources/js/Pages/Settings/Notifications.tsx`
+- `resources/js/Pages/Settings/Activity.tsx`
+- `app/Http/Controllers/Settings/` (settings controllers)
+
+### Test Focus
+- Profile update validation
+- Notification preference persistence
+- Activity logging accuracy
+- Security measure effectiveness
+
+---
+
+## Phase 10.5: Email Notifications
+**Duration**: Days 20.5-21  
+**Tests**: 15 tests  
+**Reference**: https://laravel.com/docs/12.x/mail
+
+### Goals
+- Certificate expiry warnings (30/7/1 days before expiration)
+- Trial expiry warnings (7/3/1 days before trial ends)
+- Scan completion notifications
+- Unsubscribe handling
+
+### Implementation Hints
+- **Mail Driver**: Configure Resend in `config/mail.php`
+- **Notification Classes**: Use Laravel Notifications for structured emails
+- **Queued Mail**: Queue all emails via `ShouldQueue` interface
+- **Templates**: Blade templates in `resources/views/emails/`
+- **Unsubscribe**: UUID-based unsubscribe tokens in user table
+- **Scheduling**: Laravel Scheduler for daily expiry checks
+
+### Key Deliverables
+- Certificate expiry email notifications (30/7/1 day warnings)
+- Trial expiry email notifications (7/3/1 day warnings)
+- Scan completion summary emails
+- Email templates with responsive design
+- Unsubscribe functionality
+- Notification preferences management
+
+### Key Files to Create
+- `app/Notifications/CertificateExpiringNotification.php`
+- `app/Notifications/TrialExpiringNotification.php`
+- `app/Notifications/ScanCompletedNotification.php`
+- `resources/views/emails/` (email templates)
+- `app/Console/Commands/SendExpiryWarnings.php`
+
+### Test Focus
+- Email delivery accuracy
+- Template rendering with correct data
+- Unsubscribe token generation and validation
+- Notification preferences respect
+
+---
+
+## Phase 11: Report Generation & PDF Creation
+**Duration**: Days 22-23  
+**Tests**: 25 tests  
+**Reference**: `/docs/technical.md` → "Report Generator"
+
+### Goals
+- Professional PDF security reports
+- S3 storage with signed URLs
+- Automated report generation
+- Client-ready formatting
+
+### Implementation Hints
+- **PDF Library**: Use `barryvdh/laravel-dompdf` for PDF generation
+- **Templates**: Blade views in `resources/views/reports/` with CSS styling
+- **S3 Integration**: Laravel Filesystem with signed URL generation
+- **Queue Jobs**: `GenerateReport` job for async PDF creation
+- **Branding**: Company logo, colors, and professional layout
+
+### Key Deliverables
+- PDF reports using DomPDF with executive summaries
+- S3 storage with 1-hour signed download URLs
+- Report generation job queue
+- Professional formatting with domain branding
+- Email delivery integration
+
+### Key Files to Create
+- `app/Services/ReportGenerator.php`
+- `app/Jobs/GenerateReport.php`
+- `resources/views/reports/security.blade.php`
+- `app/Http/Controllers/ReportController.php`
+
+### Test Focus
+- PDF generation reliability
+- S3 storage and URL signing
+- Report content accuracy
+- Queue job processing
+
+---
+
+## Phase 12: WorkOS Authentication Enhancement
+**Duration**: Day 24  
+**Tests**: 15 tests  
+**Reference**: Laravel WorkOS documentation
+
+### Goals
+- Enhanced WorkOS features (Passkeys, Magic Auth)
+- Social account profile synchronization
+- Trial period validation for all auth methods
+
+### Implementation Hints
+- **Passkeys**: Use WorkOS WebAuthn API for passwordless authentication
+- **Magic Auth**: WorkOS Magic Link implementation for email-based login
+- **Profile Sync**: Update user data from WorkOS profile on each login
+- **Avatar Storage**: S3 storage for profile pictures from social providers
+- **Multi-Auth**: Support switching between auth methods in user settings
+
+### Key Deliverables
+- Enhanced authentication options (Passkeys, Magic Auth) beyond basic OAuth
+- Profile picture and data synchronization from WorkOS
+- Trial period consistency across all authentication methods
+- User preference management for auth methods
+
+### Key Files to Create
+- `app/Services/WorkOS/PasskeyService.php`
+- `app/Services/WorkOS/MagicAuthService.php`
+- `app/Http/Controllers/Auth/WorkOSController.php`
+- `resources/js/Components/AuthMethodSelector.tsx`
+
+### Test Focus
+- Multiple authentication method flows
+- Profile data synchronization accuracy
+- Trial period activation consistency
+- Data synchronization accuracy
+
+---
+
+## Phase 13: Payment Integration & Subscription Management
+**Duration**: Days 25-26  
+**Tests**: 30 tests  
+**Reference**: Laravel Cashier documentation
+
+### Goals
+- Stripe subscription management
+- $27/month pricing with 14-day trial
 - Payment method management
-- Billing history
-- Cancellation flow
+- Subscription lifecycle handling
+- Subscription settings UI in existing settings layout
 
-#### 6.5 Trial & Subscription Enforcement
-- Create EnsureSubscriptionActive middleware
-- Create EnsureApiSubscriptionActive for API routes
-- Implement getSubscriptionStatus() method with all states
-- Add subscription_status column to users table
-- Add subscription_ends_at and grace_ends_at columns
-- Configure protected routes in web.php and api.php
+### Implementation Hints
+- **Cashier Setup**: Install `laravel/cashier` and run migrations
+- **Stripe Products**: Create $27/month price in Stripe dashboard
+- **Billable Model**: Add `Billable` trait to User model
+- **Webhooks**: Handle subscription updates, payment failures
+- **Settings Tab**: Add "Subscription" tab to existing settings layout
+- **Payment Forms**: Use Stripe Elements for secure card collection
+- **Invoice Portal**: Stripe Customer Portal for self-service
 
-#### 6.6 Trial Expiry Components
-- Trial expiry banner component with 3 states (info/warning/expired)
-- Disabled button states for expired trials
-- Redirect logic to billing page on protected actions
-- Countdown timer for days remaining
-- Grace period warning banners
-- Payment failure notification system
+### Key Deliverables
+- Laravel Cashier integration with Stripe
+- $27/month subscription plans
+- Subscription settings tab (below Appearance in settings sidebar)
+- Payment method addition/update/removal
+- Subscription cancellation and reactivation
+- Invoice history and downloads
+- Trial-to-paid conversion flow
+- Settings UI matching existing Profile/Password/Appearance styling
 
-#### 6.7 Access Control Gates
-- User helper methods (hasActiveSubscription, isInTrial, isInGracePeriod)
-- Route protection for domains.store, domains.scan
-- Route protection for reports.store, reports.download
-- API endpoint protection with 402 Payment Required responses
-- Domain limit enforcement (10 domains max)
-- Scan rate limiting per subscription tier
+### Key Files to Create
+- `app/Http/Controllers/SubscriptionController.php`
+- `resources/js/Pages/Settings/Subscription.tsx`
+- `resources/js/Components/PaymentMethodForm.tsx`
+- `app/Http/Controllers/WebhookController.php`
 
----
-
-## Phase 7: Testing & Polish (Days 16-18)
-
-### ✅ DO
-- Test the complete user journey end-to-end
-- Verify all features work as expected
-- Polish UI/UX rough edges
-- Fix any bugs discovered
-- Optimize performance bottlenecks
-
-### ❌ DON'T
-- Add new features at this stage
-- Skip testing edge cases
-- Ignore error scenarios
-- Deploy with known bugs
-- Skip performance testing
-
-### What to Test
-- PDF generation with various data states
-- File storage and retrieval
-- Access control validation
-- Generation limits (10/day)
-- Async job processing
-
-### What NOT to Test
-- PDF rendering accuracy
-- Font rendering
-- File system operations
-- S3 upload mechanics
-
-### Subtasks
-
-#### 7.1 End-to-End Testing
-- Complete user signup and trial flow
-- Add and scan multiple domains
-- View scan results and history
-- Generate and download reports
-- Test billing upgrade flow
-- Verify subscription cancellation
-
-#### 7.2 PDF Report Implementation
-- Professional report templates with Achilleus branding
-- ReportGeneratorService with DomPDF
-- Async GenerateReportJob with status updates
-- Secure storage with signed URLs
-- Report management UI completion
-
-#### 7.3 Performance Optimization
-- Dashboard query optimization (N+1 prevention)
-- Frontend bundle size reduction
-- Image optimization and lazy loading
-- API response time improvements
-- Cache implementation for frequent queries
-
-#### 7.4 UI/UX Polish
-- Consistent spacing and typography
-- Smooth transitions and animations
-- Form validation feedback improvements
-- Loading state refinements
-- Dark theme consistency check
-
-#### 7.5 Bug Fixes & Edge Cases
-- Fix issues discovered during testing
-- Handle network timeout scenarios
-- Improve error messages
-- Test with various data states
-- Browser compatibility testing
+### Test Focus
+- Payment processing accuracy
+- Subscription state management
+- Trial conversion logic
+- Settings UI component integration
+- Error handling for failed payments
 
 ---
 
-## Phase 8: Production Deployment (Days 19-20)
+## Phase 14: Landing Page & Marketing Site
+**Duration**: Days 27-28  
+**Tests**: 20 tests
 
-### ✅ DO
-- Deploy to Laravel Cloud production
-- Configure all environment variables
-- Set up monitoring and alerts
-- Verify all features in production
-- Create backup procedures
+### Goals
+- Public marketing website
+- Feature presentation
+- Pricing information
+- SEO optimization
 
-### ❌ DON'T
-- Deploy without testing locally
-- Skip SSL verification
-- Forget webhook configurations
-- Ignore error tracking setup
-- Deploy without backups
+### Implementation Hints
+- **Public Routes**: Create guest-accessible routes for marketing pages
+- **SEO Components**: React Helmet for dynamic meta tags
+- **Hero Section**: Compelling headline with security monitoring value proposition
+- **Feature Cards**: Benefits of SSL monitoring, security headers, DNS checks
+- **Social Proof**: Testimonials, security badges, trust indicators
+- **CTA Optimization**: Multiple sign-up points, trial emphasis
 
-### What to Test
-- Complete user journey (signup → scan → report → billing)
-- Performance against targets
-- Security vulnerabilities
-- Load handling
-- Error recovery
+### Key Deliverables
+- Landing page with value proposition
+- Feature showcase with screenshots
+- Pricing page with plan comparison
+- About and contact pages
+- SEO meta tags and structured data
+- Call-to-action optimization
 
-### What NOT to Test
-- Third-party service uptime
-- Network latency
-- Browser performance
-- External API limits
+### Key Files to Create
+- `resources/js/Pages/Welcome.tsx` (landing page)
+- `resources/js/Pages/Pricing.tsx`
+- `resources/js/Pages/Features.tsx`
+- `resources/js/Components/HeroSection.tsx`
+- `resources/js/Components/FeatureCard.tsx`
 
-### Subtasks
-
-#### 8.1 Laravel Cloud Setup
-- Create project at cloud.laravel.com
-- Configure PostgreSQL database with hibernation
-- Set up Redis for cache and queues
-- Configure queue workers with auto-scaling
-- Set up S3 storage for PDF reports
-
-#### 8.2 Environment Configuration
-- Set all production environment variables
-- Configure Stripe production keys
-- Set up Stripe webhook endpoints
-- Configure domain and SSL
-- Set up Laravel Reverb for WebSockets
-
-#### 8.3 Deployment & Verification
-- Deploy application code
-- Run database migrations
-- Verify all features work in production
-- Test payment flow with real card
-- Confirm email delivery (support@achilleus.so)
-
-#### 8.4 Monitoring & Alerts
-- Configure application monitoring
-- Set up error tracking (Sentry/Bugsnag)
-- Configure uptime monitoring
-- Set up performance alerts
-- Database backup verification
-
-#### 8.5 Security Hardening
-- Verify HTTPS enforcement
-- Test security headers
-- Confirm rate limiting works
-- Validate CORS settings
-- Run security scan on production
+### Test Focus
+- Page load performance
+- SEO tag accuracy
+- Conversion funnel testing
+- Mobile responsiveness
 
 ---
 
-## Phase 9: Landing Page & Launch (Day 21)
+## Phase 15: Production Polish & Deployment
+**Duration**: Days 29-30  
+**Tests**: 25 tests
 
-### ✅ DO
-- Create compelling landing page
-- Add legal pages (Terms, Privacy)
-- Implement SEO optimization
-- Set up analytics
-- Prepare for launch
+### Goals
+- Production readiness
+- Laravel Cloud deployment
+- Performance optimization
+- Monitoring and alerting
 
-### ❌ DON'T
-- Launch without legal pages
-- Skip SEO basics
-- Forget analytics setup
-- Launch without testing signup flow
-- Skip social meta tags
+### Implementation Hints
+- **Laravel Cloud**: Push to production branch for auto-deployment
+- **Environment**: Production .env with Stripe live keys, proper URLs
+- **Infrastructure**: Laravel Cloud automatically provides:
+  - Managed Redis for caching and queues
+  - Auto-scaling queue workers (no configuration needed)
+  - Built-in error tracking and monitoring
+  - Database backups and disaster recovery
+  - CDN for static assets
+  - SSL certificates (automatic)
+- **DNS Setup**: Point achilleus.so to Laravel Cloud load balancer
+- **Reference**: https://cloud.laravel.com/ for deployment details
 
-### What to Test
-- Landing page loading
-- Error page display
-- Health check endpoints
-- Backup procedures
-- Legal flow
+### Key Deliverables
+- Laravel Cloud production deployment
+- Performance optimization (caching, database indexes)
+- Error monitoring and alerting setup
+- Backup and disaster recovery procedures
+- Security hardening and SSL configuration
+- Domain setup and DNS configuration
 
-### What NOT to Test
-- Marketing copy effectiveness
-- Design aesthetics
-- CDN performance
-- Laravel Cloud internals
+### Key Files to Create
+- `.env.production` (production environment)
+- `deploy.yml` (deployment configuration)
+- `app/Console/Commands/CacheWarmup.php`
+- Production monitoring dashboard
 
-### Subtasks
-
-#### 9.1 Landing Page Implementation
-- Integrate Salient template from Tailwind
-- Hero section with clear value proposition
-- Feature showcase with benefits
-- Pricing section with $27/month CTA
-- Testimonials section (placeholder)
-- Footer with legal links
-
-#### 9.2 Legal Pages
-- Terms of Service page
-- Privacy Policy page (basic)
-- Terms acceptance checkbox on signup
-
-#### 9.3 SEO & Analytics
-- Meta tags for all pages
-- Open Graph tags for social sharing
-- Sitemap generation
-- robots.txt configuration
-- Google Analytics or Plausible setup
-
-#### 9.4 Error Pages
-- Custom 404 page with navigation
-- 403 page with upgrade CTA
-- 500 page with support email
-- 503 maintenance mode page
-- Consistent branding on all error pages
-
-#### 9.5 Final Launch Checklist
-- Test complete signup to payment flow
-- Verify all email notifications
-- Check all external links
-- Validate SSL certificate
-- Submit to search engines
+### Test Focus
+- Production environment validation
+- Performance benchmarks
+- Error monitoring accuracy
+- Security configuration verification
 
 ---
-
-## Success Criteria
-
-### MVP Checklist
-- [ ] User registration with 14-day trial
-- [ ] 10 domain management (HTTPS only)
-- [ ] Three-module security scanning
-- [ ] Security scoring (A+ to F grades)
-- [ ] PDF report generation
-- [ ] Stripe subscription ($27/month)
-- [ ] Dashboard with real metrics
-- [ ] Activity tracking
-- [ ] Support contact (support@achilleus.so)
-- [ ] Basic legal pages (Terms, Privacy)
-
-### Performance Targets
-- Dashboard load: <500ms
-- Scan completion: <30 seconds
-- PDF generation: <10 seconds
-- API response: <200ms
-- System uptime: >99.9%
-
-### Quality Metrics
-- Test coverage: >85%
-- Zero critical vulnerabilities
-- Mobile responsive
-- WCAG 2.1 AA compliant
-- SEO optimized landing
-
----
-
-## Deployment Checklist
-
-### Pre-Deployment
-- [ ] All tests passing
-- [ ] Security audit complete
-- [ ] Performance tested
-- [ ] Legal documents ready
-- [ ] Monitoring configured
-- [ ] Environment variables set
-- [ ] Database migrations tested
-
-### Laravel Cloud Deployment
-- [ ] Project created at https://cloud.laravel.com/
-- [ ] Database provisioned
-- [ ] Redis configured
-- [ ] Queue workers set
-- [ ] Storage configured
-- [ ] SSL automatic
-- [ ] Reverb configured
-- [ ] Stripe webhooks set
-
-### Post-Deployment
-- [ ] Health checks passing
-- [ ] User flows tested
-- [ ] Payment processing verified
-- [ ] Monitoring active
-- [ ] Backups verified
-- [ ] Performance baseline set
-- [ ] Security scan complete
-
----
-
-This execution plan provides a clear roadmap for building Achilleus MVP in 21 days. Each subtask describes WHAT to build, and the workflow (plan → test → code → verify) is applied TO each subtask during implementation.

@@ -2,658 +2,467 @@
 
 ## Executive Summary
 
-Achilleus is a security monitoring SaaS that provides comprehensive website security scanning at $27/month for up to 10 domains. Built for developers and freelancers managing multiple websites, it delivers enterprise-grade security analysis at 90% less cost than competitors.
+**Product Name**: Achilleus  
+**Tagline**: Security monitoring for developers managing multiple websites  
+**Target Market**: Freelancers, agencies, and small businesses  
+**Price Point**: $27/month for 10 domains with unlimited scans  
+**Core Value**: Affordable, automated security monitoring without enterprise complexity  
 
-## Market Position
+---
 
-### Target Market
-- **Primary**: 127,000+ freelance developers managing 5-20 websites
-- **Secondary**: Small businesses with multiple web properties
-- **Tertiary**: Security-conscious developers needing documentation
+## Problem Statement
 
-### Value Proposition
-**"Enterprise security monitoring at freelancer pricing"**
-- 10 domains for $27/month (competitors: $250+/month)
-- Unlimited security scans (no usage limits)
-- Professional PDF reports included
-- Single comprehensive scan covering all security vectors
+### The Problem
+Developers and small businesses managing multiple websites face significant security challenges:
+- **No Visibility**: Security vulnerabilities remain hidden until exploited
+- **Enterprise Tools**: Existing solutions are complex and expensive ($200+/month)
+- **Manual Checks**: Time-consuming to verify SSL, headers, DNS across domains
+- **Client Trust**: Hard to demonstrate security compliance to clients
+- **Alert Fatigue**: Too many notifications from complex tools
 
-### Competitive Advantage
-- **97% cost savings** vs per-site pricing models
-- **No client management complexity** - simple, focused tool
-- **8/10 security coverage** - optimal balance of completeness and reliability
-- **<15 second scans** - fast enough for real-time use
+### Our Solution
+Achilleus provides simple, automated security monitoring that:
+- Scans all domains in under 30 seconds
+- Presents results in a clear, actionable format
+- Costs 85% less than enterprise alternatives
+- Requires zero configuration or security expertise
+- Generates professional reports for clients
 
-## Product Features
+---
 
-### Core Functionality
+## Target Audience
 
-#### 1. Security Scanning (One Comprehensive Scan)
-**SSL/TLS Analysis (40% weight)**
-- Certificate validation and expiration monitoring
+### Primary Persona: Freelance Developer
+- **Demographics**: 25-40 years old, technical background
+- **Manages**: 5-15 client websites
+- **Pain Points**: 
+  - Manually checking SSL expiry dates
+  - Explaining security to non-technical clients
+  - Justifying security maintenance fees
+- **Goals**: 
+  - Automate security monitoring
+  - Professional client reporting
+  - Affordable monthly cost
+
+### Secondary Persona: Small Agency Owner
+- **Demographics**: 30-45 years old, business-focused
+- **Manages**: 20-50 client websites
+- **Pain Points**:
+  - Team needs security visibility
+  - Compliance requirements from clients
+  - Cost of enterprise tools
+- **Goals**:
+  - Centralized security dashboard
+  - Delegate monitoring to team
+  - White-label reports for clients
+
+### Tertiary Persona: Small Business Owner
+- **Demographics**: 35-55 years old, non-technical
+- **Manages**: 1-3 business websites
+- **Pain Points**:
+  - Doesn't understand security
+  - Worried about breaches
+  - Can't afford security consultants
+- **Goals**:
+  - Peace of mind
+  - Simple explanations
+  - Automated protection
+
+---
+
+## Core Features
+
+### 1. Domain Management
+**Purpose**: Central hub for all monitored websites
+
+**Functionality**:
+- Add domains with HTTPS validation
+- Configure email security settings (SPF/DKIM/DMARC)
+- Set DKIM selector for accurate scanning
+- Mark domains as non-email sending
+- View last scan status at a glance
+
+**User Flow**:
+1. User clicks "Add Domain"
+2. Enters clean domain name (e.g., "example.com") - system shows "→ https://example.com" preview
+3. Selects email configuration
+4. Optional: Enters DKIM selector
+5. Domain added and immediately scanned
+6. Results appear in dashboard
+
+**Business Rules**:
+- Maximum 10 domains per account
+- Clean domain input (e.g., "example.com")
+- Automatic HTTPS prepending for security scanning
+- No duplicate domains per user
+- URL normalization (remove www, protocol, trailing slash, paths)
+
+### 2. Security Scanning
+**Purpose**: Automated vulnerability detection
+
+**Three Scanner Modules**:
+
+#### SSL/TLS Scanner (40% weight)
+- Certificate expiry monitoring
 - Protocol version checking (TLS 1.2+)
-- Cipher suite strength analysis
-- Perfect Forward Secrecy verification
+- Cipher strength analysis
+- Certificate chain validation
+- Hostname verification
 
-**Security Headers (30% weight)**
-- HSTS configuration analysis
-- Content Security Policy evaluation
-- X-Frame-Options verification
-- X-Content-Type-Options checking
-- Referrer-Policy assessment
+#### Security Headers Scanner (30% weight)
+- HSTS (Strict Transport Security)
+- CSP (Content Security Policy)
+- X-Frame-Options
+- X-Content-Type-Options
+- Referrer-Policy
 
-**DNS/Email Security (30% weight)**
+#### DNS/Email Scanner (30% weight)
 - SPF record validation
-- DKIM verification (with custom selectors)
-- DMARC policy analysis
-- DNSSEC status checking
-- CAA record verification
+- DKIM key verification
+- DMARC policy checking
+- DNSSEC status
+- CAA record detection
 
-#### 2. Domain Management
-- Add up to 10 domains per account
-- HTTPS-only (security-first approach)
-- Email configuration options (expected/none)
-- Custom DKIM selector support
-- Domain validation with helpful feedback
+**Scoring System**:
+- 0-100 point scale
+- Letter grades: A+ (95+), A (90-94), B+ (85-89), B (80-84), C (70-79), D (60-69), F (0-59)
+- Weighted average across modules
+- Automatic weight redistribution if scanner fails
 
-#### 3. Dashboard & Monitoring
-**Four Key Metrics**
-- Security Score (0-100 with letter grade)
-- Active Domains (X of 10 available)
-- Last Scan (time and domain)
-- Critical Issues (domains scoring <60)
+### 3. Dashboard
+**Purpose**: Quick security overview
 
-**Security Trends**
-- 7, 30, 90-day, and 1-year views
-- Visual score progression
-- Historical comparison
+**Components**:
+- **Overall Score Card**: Average across all domains
+- **Domains Card**: Active/total count
+- **Last Scan Card**: Most recent scan with domain name
+- **Issues Card**: Count of critical problems
+- **Trend Chart**: Score history over time (7d/30d/90d/1y)
 
-#### 4. Professional Reporting
-**PDF Reports Include**
-- Executive summary with overall score
+**Real-time Updates**:
+- WebSocket connection for live scan progress
+- Instant score updates
+- Toast notifications for completions
+
+### 4. Report Generation
+**Purpose**: Professional PDF reports for clients
+
+**Report Contents**:
+- Executive summary with overall grade
 - Module-by-module breakdown
-- Prioritized recommendations
-- Technical details for developers
-- Achilleus branding
+- Specific issues found
+- Actionable recommendations
+- Scan timestamp and domain details
 
-#### 5. Activity Tracking
-- Complete scan history
-- Filter by domain, date, score
-- One-click report generation
-- Score trend analysis
+**Delivery**:
+- One-click PDF generation
+- Secure S3 storage
+- Shareable download links (1-hour expiry)
+- Email delivery option
 
-#### 6. Support System (Simplified MVP)
-- Support email displayed in footer and profile
-- Basic FAQ on landing page
-- Contact email: support@achilleus.so
+### 5. User Management
+**Purpose**: Account and subscription handling
 
-#### 7. Legal Pages (MVP Requirements)
-- Terms of Service acceptance on signup (required)
-- Privacy Policy link (static page)
+**Authentication Options**:
+- Email/password registration
+- Google OAuth login
+- Password reset flow
 
-### User Experience
+**Trial System**:
+- 14-day free trial for all new users
+- Full feature access during trial
+- Automatic conversion to paid
 
-#### Navigation Structure
-```
-Dashboard (default view)
-├── Domains (manage websites)
-├── Activity (scan history)  
-└── Reports (PDF downloads)
+### 6. Email Notifications
+**Purpose**: Proactive security monitoring alerts
 
-Profile Menu:
-├── Profile Settings
-├── Subscription (billing management)
-└── Sign Out
-```
+**Notification Types**:
+- **Certificate Expiry Warnings**: 30, 7, and 1 day before SSL certificate expiration
+- **Trial Expiry Warnings**: 7, 3, and 1 day before trial period ends
+- **Scan Completion**: Summary email when domain scans finish
 
-## Technology Stack
+**Features**:
+- Responsive email templates
+- One-click unsubscribe functionality
+- Notification preferences management
+- Queued delivery for reliability
 
-- **Backend**: Laravel 12 with PHP 8.3+
-- **Frontend**: React 19 with TypeScript
-- **UI Library**: Shadcn/ui
-- **Infrastructure**: Laravel Cloud
-- **Real-time**: Laravel Reverb
-- **Payments**: Laravel Cashier (Stripe)
+### 7. Billing Management
+**Purpose**: Simple subscription handling
 
-## User Interface
-
-**Complete UI/UX specifications have been moved to design.md**
-
-Key aspects:
-- Dark theme design for security focus
-- Dashboard-centric navigation
-- Real-time updates via WebSockets
-- Mobile-responsive layouts
-- Comprehensive empty states
-
-## Data Requirements
-
-**See `/docs/design.md` for complete UI component specifications**
-
-### Dashboard Metrics
-```
-- **Security Score**: Average of all domain scores
-- **Active Domains**: Count of active domains (max 10)
-- **Last Scan**: Most recent scan timestamp and domain
-- **Critical Issues**: Domains scoring below 60
-
-### Security Score Trends
-- Time periods: 7, 30, 90 days, 1 year
-- Data aggregated by day/week/month
-- Color-coded based on score ranges
-
-## Business Logic
-
-### Subscription Management
-- **Trial Period**: 14 days from registration
-- **Price**: $27/month for Solo Plan
-- **Limits**: 10 domains, unlimited scans
-- **Billing**: Handled via Laravel Cashier
-- **Cancellation**: Immediate with access until period end
-
-### Domain Management Rules
-- **HTTPS Only**: No HTTP domains allowed
-- **URL Normalization**: Remove www, trailing slashes
-- **Duplicate Prevention**: One entry per unique domain
-- **Email Mode**: Expected (with SPF/DKIM) or None
-- **Deletion**: Cascades to remove all scan history
-
-### Scanning Logic
-- **Rate Limiting**: 10 scans/minute per user
-- **Scan Duration**: 15-30 seconds typical
-- **Retry Logic**: 3 attempts with exponential backoff
-- **Failure Handling**: Redistribute weights among working scanners
-- **Queue Processing**: Laravel Cloud managed workers
-
-### Data Access Patterns
-
-All UI components pull from database:
-- Dashboard metrics from aggregated domain scores
-- Activity history from scans table
-- Reports from S3 with signed URLs
-- Real-time updates via Laravel Reverb
-
-See **database.md** for schema details.
-
-### Trial Management
-- Display banner when trial_ends_at > now()
-- Show days remaining prominently
-- Block scan features after trial expiry
-- Automatic transition to subscription or locked state
-
-### Error Handling Strategy
-
-- Empty states with clear CTAs
-- Graceful degradation for failed scanners
-- User-friendly error messages
-- Support email for critical issues
-- Automatic retry for transient failures
-
-## Related Documentation
-
-- **Technical Implementation**: See `/docs/technical.md`
-- **UI/UX Specifications**: See `/docs/design.md`
-- **Database Schema**: See `/docs/database.md`
-- **Testing Strategy**: See `/docs/testing.md`
-- **Development Timeline**: See `/docs/execution.md`
-
-#### Loading States
-- Skeleton loading for data tables
-- Spinner for action buttons
-- Progress bars for scan progress
-
-This design system ensures consistency across all pages while maintaining the professional security tool aesthetic.
-
-#### Trial Experience
-- 14-day free trial
-- No credit card required
-- Full feature access
-- Clear upgrade path
-- Trial countdown banner
-
-#### Design Principles
-- Dark theme (#0a0a0b background)
-- Mobile-responsive
-- Accessibility (WCAG AA)
-- Fast page loads (<500ms)
-- Clear visual hierarchy
-
-## Pricing Strategy
-
-### Solo Plan - $27/month
-**Includes:**
-- 10 domain slots
+**Subscription Model**:
+- $27/month flat rate
+- 10 domains included
 - Unlimited scans
-- Professional PDF reports
-- Full scan history
-- Email support
+- All features included
 
-**Why This Price:**
-- Above basic tools ($5-15) - signals quality
-- Below enterprise ($50+) - remains accessible
-- Sweet spot for freelancers
-- Sustainable unit economics
+**Payment Features**:
+- Stripe integration
+- Credit card management
+- Invoice history
+- Subscription cancellation
+- Payment method updates
 
-**Technical Foundation:**
-- Built with Laravel 12 starter kit (React + TypeScript): https://laravel.com/docs/12.x/starter-kits
-- Landing page uses Salient template: https://tailwindcss.com/plus/templates/salient
+---
 
-### Trial Strategy
-- **14 days**: Optimal for technical evaluation
-- **No restrictions**: Full features during trial
-- **No card required**: Reduces friction
-- **Clear value**: Immediate scan results
+## User Journeys
+
+### Journey 1: First-Time User Setup
+1. **Discover**: User finds Achilleus via search/recommendation
+2. **Sign Up**: Creates account with email or OAuth
+3. **Trial Starts**: 14-day countdown begins
+4. **Add First Domain**: Types "mywebsite.com" (no https:// needed)
+5. **Domain Preview**: System shows "→ https://mywebsite.com" 
+6. **Initial Scan**: Automatic scan shows security status
+7. **Explore Results**: Views detailed findings
+8. **Add More Domains**: Adds client websites using simple domain names
+9. **Generate Report**: Creates first PDF report
+10. **Convert to Paid**: Subscribes before trial ends
+
+### Journey 2: Daily Monitoring Workflow
+1. **Morning Check**: Opens dashboard
+2. **Review Scores**: Checks overall security status
+3. **Investigate Issues**: Clicks through to problems
+4. **Fix Problems**: Takes action based on recommendations
+5. **Rescan**: Triggers new scan to verify fixes
+6. **Report Success**: Generates report for client
+
+### Journey 3: Client Reporting Process
+1. **Monthly Review**: End of month arrives
+2. **Scan All**: Triggers scans for all domains
+3. **Generate Reports**: Creates PDFs for each client
+4. **Download Reports**: Gets secure links
+5. **Send to Clients**: Emails reports with explanations
+6. **Justify Fees**: Uses reports to show value
+
+### Journey 4: SSL Certificate Expiry
+1. **Warning Email**: Receives 30-day expiry notice
+2. **Dashboard Alert**: Sees warning in dashboard
+3. **View Details**: Checks certificate information
+4. **Renew Certificate**: Updates SSL on server
+5. **Rescan**: Verifies renewal successful
+6. **Clear Alert**: Warning removed from dashboard
+
+---
 
 ## Business Model
 
-### Revenue Model
-- **SaaS subscription**: Monthly recurring revenue
-- **Single tier**: Simplicity over complexity
-- **Billing**: Laravel Cashier with Stripe integration
-- **Auto-renewal**: Reduced churn
+### Pricing Strategy
+- **Single Tier**: $27/month (simple, no confusion)
+- **No Setup Fees**: Immediate value
+- **No Per-Scan Costs**: Unlimited usage
+- **Annual Option**: Consider 20% discount for yearly
 
-### Unit Economics (per customer)
-- **Revenue**: $27/month
-- **Infrastructure**: ~$3/month (with hibernation)
-- **Payment processing**: ~$1.50/month
-- **Gross margin**: ~80%
+### Revenue Projections
+- **Target**: 1,000 customers in Year 1
+- **MRR Goal**: $27,000/month by Month 12
+- **Churn Target**: <5% monthly
+- **LTV**: $540 (20-month average retention)
 
-### Growth Strategy
-1. **Land**: Acquire developers with free trial
-2. **Activate**: First scan within 24 hours
-3. **Convert**: Trial to paid at day 10-12
-4. **Retain**: Consistent value delivery
+### Cost Structure
+- **Infrastructure**: ~$500/month (Laravel Cloud)
+- **Payment Processing**: 2.9% + $0.30 (Stripe)
+- **Email Service**: ~$100/month (Resend)
+- **Domain**: $15/year
+- **Break-even**: ~25 customers
 
-## Market Analysis
+---
 
-### Total Addressable Market
-- **Freelance developers**: 127,000 × $324/year = $41M
-- **Small businesses**: 50,000 × $324/year = $16M
-- **Total TAM**: $57M annually
+## Competitive Analysis
 
-### Serviceable Addressable Market
-- **Target**: 1% market share in year 1
-- **SAM**: $570,000 annual revenue
-- **Goal**: 1,760 customers @ $27/month
+### Direct Competitors
 
-### Competition Landscape
+#### Sucuri ($199/month)
+- **Strengths**: CDN included, malware scanning
+- **Weaknesses**: Expensive, complex, enterprise-focused
+- **Our Advantage**: 85% cheaper, simpler interface
 
-#### Direct Competitors
-| Service | Price/Domain | 10 Domains | Limitations |
-|---------|-------------|------------|-------------|
-| SiteLock | $24.99 | $250/month | No headers analysis |
-| Sucuri | $28.00 | $280/month | WordPress focus |
-| MalCare | $24.92 | $249/month | Basic SSL only |
-| **Achilleus** | **$2.70** | **$27/month** | **None** |
+#### Detectify ($170/month)
+- **Strengths**: Penetration testing, vulnerability scanning
+- **Weaknesses**: Requires security knowledge, expensive
+- **Our Advantage**: No expertise required, affordable
 
-#### Why We Win
-- **Price**: 90% cheaper for multi-domain users
-- **Simplicity**: One scan type, clear scoring
-- **Speed**: 15-second scans vs 2-5 minutes
-- **Focus**: Security only, no feature bloat
+#### SSL Labs (Free)
+- **Strengths**: Free, detailed SSL analysis
+- **Weaknesses**: SSL only, no monitoring, manual checks
+- **Our Advantage**: Complete security, automated monitoring
 
-## User Journey Documentation
+### Indirect Competitors
+- Uptime monitoring tools (Pingdom, UptimeRobot)
+- Security plugins (Wordfence, Sucuri plugin)
+- Manual security audits
 
-### New User Journey (Trial to Paid)
+### Competitive Advantages
+1. **Price Point**: 85% cheaper than alternatives
+2. **Simplicity**: No security expertise required
+3. **Speed**: 30-second comprehensive scans
+4. **Focus**: Built specifically for developers
+5. **Reports**: Professional PDFs for clients
 
-#### 1. Discovery & Signup (0-5 minutes)
-**Entry Points:**
-- Landing page via search/referral
-- Product Hunt or community recommendation
-- Comparison article
-
-**User Actions:**
-1. Lands on homepage, sees "$27 for 10 domains" value prop
-2. Clicks "Start Free Trial" (no credit card required)
-3. Fills signup form (name, email, password)
-4. Accepts Terms of Service (checkbox required)
-5. Receives welcome email with trial details
-
-**System Response:**
-- Creates user account with 14-day trial
-- Sets trial_ends_at timestamp
-- Sends welcome email
-- Redirects to empty dashboard
-
-#### 2. First Domain Addition (5-10 minutes)
-**User Actions:**
-1. Sees empty dashboard with "Add Your First Domain" CTA
-2. Clicks "Add Domain" button
-3. Enters HTTPS URL (e.g., https://mysite.com)
-4. Selects email configuration (expected/none)
-5. Clicks "Add & Scan"
-
-**System Response:**
-- Validates URL (HTTPS-only, public IP)
-- Creates domain record
-- Triggers automatic first scan
-- Shows scan progress in real-time
-
-#### 3. First Scan Results (10-15 minutes)
-**User Actions:**
-1. Watches scan progress (15-30 seconds)
-2. Views security score and grade (A-F)
-3. Explores module breakdowns (SSL, Headers, DNS)
-4. Reviews recommendations list
-
-**System Response:**
-- Displays overall score with color coding
-- Shows detailed module results
-- Provides actionable recommendations
-- Updates dashboard metrics
-
-#### 4. Exploration Phase (Days 1-7)
-**User Actions:**
-- Adds more domains (up to 10)
-- Runs additional scans
-- Generates first PDF report
-- Explores scan history
-
-**Key Moments:**
-- Day 3: In-app trial progress indicator
-- Day 5: Dashboard shows feature exploration
-- Day 7: Trial halfway banner emphasis
-
-#### 5. Conversion Decision (Days 8-14)
-**User Actions:**
-- Evaluates value from scan results
-- Compares with alternatives ($27 vs $250+)
-- Decides to upgrade or abandon
-
-**Conversion Triggers:**
-- Day 10: Prominent upgrade prompt in dashboard
-- Day 12: Trial banner shows urgency
-- Day 14: Trial expiration with clear upgrade path
-
-#### 6. Paid Subscription (Post-Trial)
-**User Actions:**
-1. Clicks "Upgrade Now"
-2. Enters payment information (Stripe)
-3. Confirms $27/month subscription
-4. Continues using full features
-
-**System Response:**
-- Processes payment via Stripe
-- Updates subscription_status to 'active'
-- Removes trial banner
-- Sends payment confirmation
-
-### Returning User Journey (Daily/Weekly Use)
-
-#### Quick Scan Workflow (2-3 minutes)
-1. **Login** → Dashboard
-2. **Select Domain** → Click scan icon
-3. **View Results** → Check score changes
-4. **Generate Report** → Download PDF
-
-#### Bulk Operations (5-10 minutes)
-1. **Login** → Dashboard
-2. **Click "Scan All"** → Queue all domains
-3. **Monitor Progress** → Watch scan queue
-4. **Review Results** → Check for issues
-5. **Export Data** → Generate reports
-
-### Edge Case User Journeys
-
-#### Failed Payment Recovery
-1. Payment fails → Dashboard notification
-2. Grace period (3 days) → Limited access
-3. Update payment method → Full access restored
-4. Continued failure → Account suspended
-
-#### Domain Limit Reached
-1. Attempts to add 11th domain
-2. Sees "Domain limit reached" message
-3. Options presented:
-   - Remove existing domain
-   - Upgrade plan (future feature)
-   - Contact support
-
-#### Scanner Failure Handling
-1. Scan fails (timeout/error)
-2. User sees error message with reason
-3. Retry option provided
-4. Support contact if persistent
-
-### Trial Expiry & Subscription Enforcement
-
-#### Trial Period Lifecycle
-1. **Registration**: 14-day trial starts automatically
-2. **Day 1-11**: Full access to all features
-3. **Day 12-14**: Warning banner appears (3 days remaining)
-4. **Day 14**: Critical warning (trial ends today)
-5. **Day 15+**: Trial expired, features restricted
-
-#### Trial Expiry User Flow
-1. **User with Expired Trial Attempts Scan**:
-   - Click "Scan Now" button
-   - Redirected to billing page
-   - Error message: "Your trial has expired. Please subscribe to continue."
-   - Subscribe button prominently displayed
-   - Trial usage statistics shown
-
-2. **User with Expired Trial Views Dashboard**:
-   - Dashboard accessible (read-only)
-   - All action buttons disabled
-   - Red banner: "Trial Expired - Subscribe Now"
-   - Can view existing domains and past scans
-   - Cannot add domains or run new scans
-
-3. **User with Expired Trial Attempts Report Generation**:
-   - Report button disabled
-   - Tooltip: "Subscription required"
-   - Clicking redirects to billing page
-   - Previous reports still downloadable
-
-#### Grace Period for Payment Failures
-1. **Initial Payment Failure**:
-   - 3-day grace period activated
-   - Yellow warning banner appears
-   - Email notification sent
-   - Full access maintained
-
-2. **During Grace Period**:
-   - Daily reminder emails
-   - Warning banner on all pages
-   - "Update Payment Method" CTA
-   - Countdown timer shown
-
-3. **Grace Period Expired**:
-   - Access restricted like expired trial
-   - Red banner: "Subscription Suspended"
-   - All scanning features disabled
-   - Existing data remains accessible
-
-#### Subscription States & Access Levels
-
-| State | Dashboard | View Domains | Add Domains | Run Scans | Generate Reports | Billing |
-|-------|-----------|--------------|-------------|-----------|------------------|---------|
-| Trial Active | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Trial Expired | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
-| Active Subscription | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Grace Period | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Suspended | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
-| Cancelled (Active) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Cancelled (Expired) | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ |
-
-#### Reactivation Flow
-1. **Expired Trial User Subscribes**:
-   - Immediate access restoration
-   - All features unlocked
-   - Trial data preserved
-   - Welcome back email sent
-
-2. **Suspended User Updates Payment**:
-   - Payment processed immediately
-   - Access restored within 1 minute
-   - Grace period counter reset
-   - Confirmation email sent
-
-## Product Roadmap
-
-### Current MVP (Launched)
-✅ Three-module security scanning
-✅ 10 domain management
-✅ Professional PDF reports
-✅ Stripe billing integration
-✅ 14-day free trial
-
-### Phase 2 (Months 2-3)
-- Email notifications for critical issues
-- Scan scheduling (daily/weekly/monthly)
-- API access for integrations
-- Enhanced PDF customization
-
-### Phase 3 (Months 4-6)
-- Additional security modules
-- Bulk domain import
-- CSV/JSON exports
-- Webhook notifications
-
-### Future Vision (Year 2)
-- Team accounts (multi-user)
-- White-label options
-- Advanced analytics
-- Compliance reporting
+---
 
 ## Success Metrics
 
-### Key Performance Indicators
-- **Trial conversion rate**: Target 25%
-- **Monthly churn**: Target <5%
-- **Customer acquisition cost**: <$50
-- **Lifetime value**: >$500
-- **Monthly recurring revenue**: $8,100 (300 customers)
+### User Acquisition
+- **Sign-ups**: 100/month target
+- **Trial-to-Paid**: 15% conversion target
+- **Referral Rate**: 20% from existing users
+- **CAC**: <$50 per customer
 
-### Product Metrics
-- **Scan completion rate**: >95%
-- **Time to first scan**: <5 minutes
-- **Support tickets**: <5% of users/month
-- **Uptime**: 99.9%
+### User Engagement
+- **Domains per User**: Average 5-7
+- **Scans per Month**: Average 20 per user
+- **Reports Generated**: 3 per user per month
+- **Dashboard Visits**: Weekly active use
 
-### User Satisfaction
-- **NPS score**: Target >50
-- **Feature requests**: Track and prioritize
-- **Churn reasons**: Monthly analysis
-- **Review ratings**: 4.5+ stars
+### Business Health
+- **MRR Growth**: 20% month-over-month
+- **Churn Rate**: <5% monthly
+- **NPS Score**: >50
+- **Support Tickets**: <2 per customer per year
 
-## Risk Analysis
+---
+
+## Feature Roadmap
+
+### Phase 1: MVP (Days 1-21)
+✅ Core scanning (SSL, Headers, DNS)  
+✅ Dashboard with metrics  
+✅ Domain management  
+✅ PDF reports  
+✅ Stripe payments  
+✅ OAuth login  
+
+### Phase 2: Enhancement (Months 2-3)
+- Email notifications for issues
+- Scheduled automatic scans
+- Bulk domain import
+- White-label reports
+- API access
+
+### Phase 3: Growth (Months 4-6)
+- WordPress plugin
+- Uptime monitoring
+- Performance metrics
+- Team accounts
+- Slack integration
+
+### Phase 4: Scale (Months 7-12)
+- Mobile app
+- Advanced vulnerability scanning
+- Compliance reports (GDPR, PCI)
+- Partner program
+- Enterprise tier
+
+---
+
+## Marketing Strategy
+
+### Positioning Statement
+"Achilleus is the security monitoring tool that helps developers protect multiple websites without the complexity or cost of enterprise solutions."
+
+### Key Messages
+1. **Simple**: "Security monitoring in plain English"
+2. **Affordable**: "Enterprise features at freelancer prices"
+3. **Fast**: "Complete security scan in 30 seconds"
+4. **Professional**: "Client-ready reports in one click"
+
+### Distribution Channels
+1. **Content Marketing**: Security guides and tutorials
+2. **Developer Communities**: Reddit, Dev.to, Hacker News
+3. **Freelance Platforms**: Upwork, Fiverr profiles
+4. **Partner Program**: Referral commissions
+5. **SEO**: Target "website security monitoring" keywords
+
+### Launch Strategy
+1. **Soft Launch**: 50 beta users for feedback
+2. **Product Hunt**: Launch when stable
+3. **Developer Forums**: Share in relevant communities
+4. **Case Studies**: Document customer success
+5. **Influencer Outreach**: Developer YouTube channels
+
+---
+
+## Risk Mitigation
 
 ### Technical Risks
-- **Scanner accuracy**: Continuous testing and validation
-- **False positives**: Conservative scoring approach
-- **Scaling issues**: Laravel Cloud auto-scaling
-- **Security breaches**: SSRF protection, input validation
+- **Scanner Failures**: Implement retry logic and fallbacks
+- **False Positives**: Regular scanner calibration
+- **Performance Issues**: Queue system for scans
+- **Data Loss**: Regular backups to S3
 
 ### Business Risks
-- **Low conversion**: Optimize onboarding flow
-- **High churn**: Focus on consistent value
-- **Competition**: Maintain price advantage
-- **Support burden**: Comprehensive documentation
+- **Low Conversion**: A/B test onboarding flow
+- **High Churn**: Exit surveys and improvements
+- **Competition**: Focus on simplicity differentiator
+- **Support Burden**: Comprehensive documentation
 
-### Mitigation Strategies
-- Regular security audits
-- Automated testing pipeline
-- Customer feedback loops
-- Proactive monitoring
+### Security Risks
+- **SSRF Attacks**: NetworkGuard validation
+- **Data Breaches**: Encryption at rest and transit
+- **Payment Fraud**: Stripe Radar protection
+- **DDoS**: CloudFlare protection
 
-## Go-to-Market Strategy
+---
 
-### Positioning
-**"The security monitoring tool that doesn't cost more than your hosting"**
+## Support Strategy
 
-### Launch Channels
-1. **Product Hunt**: Technical audience
-2. **Developer communities**: Reddit, HN, Dev.to
-3. **Content marketing**: Security best practices
-4. **Comparison pages**: vs competitors
+### Self-Service
+- Comprehensive documentation
+- Video tutorials
+- FAQ section
+- In-app tooltips
 
-### Messaging Framework
-- **Problem**: Security tools charge per-site, becoming unaffordable
-- **Solution**: Flat-rate pricing for 10 domains
-- **Benefit**: Enterprise security at freelancer prices
-- **Proof**: Live demo, free trial
+### Assisted Support
+- Email support (24-hour response)
+- Priority support for paid users
+- Community forum
+- Monthly webinars
 
-### Customer Acquisition
-1. **Organic search**: "affordable security monitoring"
-2. **Comparison content**: Alternative to [competitor]
-3. **Developer tools directories**: Free listings
-4. **Word of mouth**: Referral incentives
+### Success Resources
+- Getting started guide
+- Security best practices
+- Client communication templates
+- Report interpretation guide
 
-## Business Rules & Constraints
+---
 
-### Domain Limits
-```php
-const MAX_DOMAINS = 10;
-const MAX_SCANS_PER_MINUTE = 10; // Rate limiting
-```
-
-### Trial Configuration
-```php
-const TRIAL_DAYS = 14;
-const TRIAL_FEATURES = 'full'; // No restrictions during trial
-```
-
-### Subscription Details
-```php
-const PLAN_NAME = 'Solo Plan';
-const PLAN_PRICE = 27; // USD per month
-const SCAN_LIMIT = 'unlimited';
-```
-
-### Domain Validation Rules
-- Must be HTTPS URL (HTTP rejected)
-- Private IPs blocked (192.168.x, 10.x, etc.)
-- Localhost blocked
-- URL paths ignored (normalized to domain)
-- Duplicate domains prevented per user
-
-## Legal Pages (Simplified for MVP)
+## Legal Considerations
 
 ### Terms of Service
-Basic terms page (`/terms`) includes:
-- Service description and limitations
-- Acceptable use policy
-- Payment terms and refund policy
-- Liability limitations
-- Intellectual property rights
-- Termination conditions
+- Scanning own domains only
+- No guarantee of finding all vulnerabilities
+- Limitation of liability
+- Data retention policy
 
 ### Privacy Policy
-Basic privacy page (`/privacy`) includes:
-- What data we collect (email, domains, scan results)
-- How we use it (to provide the service)
-- We don't sell data
-- Contact: support@achilleus.so
+- GDPR compliant
+- Data minimization
+- User data ownership
+- Deletion rights
 
-## What This Project Does NOT Include
+### Compliance
+- PCI DSS for payments
+- SOC 2 consideration for enterprise
+- GDPR for EU customers
+- CCPA for California users
 
-❌ **Client Management** - No client portals or multi-tenancy
-❌ **Automation** - No automated/scheduled scans in MVP
-❌ **Multiple Scan Types** - Single comprehensive scan only
-❌ **Uptime Monitoring** - Security focus only
-❌ **White-labeling** - Achilleus branding only
-❌ **Team Features** - Single user per account
-❌ **API Access** - Web interface only in MVP
-❌ **Laravel Cashier** - Direct Stripe API integration
-❌ **Horizon** - Laravel Cloud handles queues
-❌ **Complex Support System** - Simple email only for MVP
-❌ **Legal Compliance Features** - Basic terms and privacy pages only
-❌ **Email System** - Contact support via support@achilleus.so only
+---
+
+## Success Definition
+
+### Year 1 Goals
+- 1,000 paying customers
+- $27,000 MRR
+- <5% monthly churn
+- 50+ NPS score
+- Break-even by Month 6
+
+### Long-term Vision
+Become the default security monitoring tool for developers and agencies worldwide, making website security accessible and affordable for everyone.
+
+---
 
 ## Conclusion
 
-Achilleus addresses a clear market need: affordable security monitoring for developers managing multiple websites. By focusing on essential security checks, maintaining simplicity, and offering revolutionary pricing, Achilleus can capture significant market share in the underserved freelancer and small business segments.
-
-The product is designed to be:
-- **Affordable**: $27/month for 10 domains
-- **Reliable**: 8/10 security coverage with low false positives
-- **Fast**: 15-second scans
-- **Simple**: One scan type, clear scoring
-- **Professional**: PDF reports for documentation
-
-This combination creates a compelling value proposition that competitors cannot match without destroying their revenue models.
-
-## Deployment Strategy
-
-**Laravel Cloud Only**: This project is designed specifically for Laravel Cloud deployment (https://cloud.laravel.com/). No self-hosting, Docker, or VPS deployment options are provided in the MVP. Laravel Cloud provides automatic scaling, SSL certificates, database management, and global CDN out of the box.
+Achilleus addresses a clear market need for simple, affordable security monitoring. By focusing on developers and small businesses, we can capture a underserved market segment and build a sustainable SaaS business with strong unit economics and growth potential.

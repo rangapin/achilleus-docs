@@ -1,7 +1,14 @@
-# Achilleus Database Schema
+# Achilleus Database Architecture
 
 ## Overview
-PostgreSQL 15 database managed by Laravel Cloud with automatic hibernation and scaling.
+PostgreSQL 15 database managed by Laravel Cloud with automatic hibernation and scaling. All tables use UUID primary keys for better distribution in clustered environments.
+
+**Performance Target**: Dashboard loads in <200ms (upgraded from 500ms for competitive advantage)
+
+## Phase 2 Development (Days 3-4)
+- **Test Allocation**: 25 tests covering models, relationships, business rules
+- **Migration Order**: users → domains → scans → scan_modules → reports → indexes
+- **Key Validations**: 10 domain limit, HTTPS-only URLs, trial period calculations
 
 ## Core Tables
 
@@ -17,17 +24,16 @@ CREATE TABLE users (
     email_verified_at TIMESTAMP,
     
     -- OAuth fields (Laravel Socialite)
-    provider VARCHAR(20), -- 'github', 'google', or NULL for email
+    provider VARCHAR(20), -- 'google', or NULL for email
     provider_id VARCHAR(255), -- OAuth provider's user ID
     
     -- Subscription fields (Laravel Cashier)
-    trial_ends_at TIMESTAMP NOT NULL,
+    trial_ends_at TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP + INTERVAL '14 days'),
     stripe_customer_id VARCHAR(255),
     stripe_subscription_id VARCHAR(255),
     stripe_price_id VARCHAR(255), -- For tracking plan type
     subscription_status VARCHAR(50) DEFAULT 'trialing',
     subscription_ends_at TIMESTAMP, -- For cancelled subscriptions
-    
     
     notification_preferences JSONB DEFAULT '{}',
     unsubscribe_token VARCHAR(255),
@@ -53,7 +59,9 @@ CREATE TABLE domains (
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(user_id, url)
+    UNIQUE(user_id, url),
+    -- Business rule: 10 domain limit enforced
+    CONSTRAINT check_domain_limit CHECK ((SELECT COUNT(*) FROM domains WHERE user_id = domains.user_id) <= 10)
 );
 ```
 
@@ -76,6 +84,29 @@ CREATE TABLE scans (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Error logging table for monitoring and analytics
+CREATE TABLE error_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    type VARCHAR(50) NOT NULL, -- 'scanner_error', 'client_error', 'application_error'
+    severity VARCHAR(20) NOT NULL CHECK (severity IN ('debug', 'info', 'warning', 'error', 'critical')),
+    message TEXT NOT NULL,
+    context JSONB,
+    
+    user_id UUID,
+    url TEXT,
+    ip INET,
+    user_agent TEXT,
+    
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- Indexes for error analytics
+CREATE INDEX idx_error_logs_type_severity ON error_logs(type, severity);
+CREATE INDEX idx_error_logs_created_at ON error_logs(created_at);
+CREATE INDEX idx_error_logs_user_id ON error_logs(user_id) WHERE user_id IS NOT NULL;
 ```
 
 ### scan_modules
@@ -85,7 +116,7 @@ Individual scanner results with raw data storage.
 CREATE TABLE scan_modules (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     scan_id UUID REFERENCES scans(id) ON DELETE CASCADE,
-    module VARCHAR(20) NOT NULL CHECK (module IN ('security_headers', 'ssl_tls', 'dns_email')),
+    module VARCHAR(20) NOT NULL CHECK (module IN ('ssl_tls', 'security_headers', 'dns_email')),
     score INTEGER CHECK (score >= 0 AND score <= 100),
     status VARCHAR(10) NOT NULL CHECK (status IN ('ok', 'warn', 'fail', 'error')),
     raw JSONB NOT NULL DEFAULT '{}',
@@ -111,72 +142,7 @@ CREATE TABLE reports (
 );
 ```
 
-## Laravel Package Tables
-
-### subscription_items
-Laravel Cashier subscription items for metered billing.
-
-```sql
-CREATE TABLE subscription_items (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    subscription_id VARCHAR(255) NOT NULL,
-    stripe_id VARCHAR(255) UNIQUE NOT NULL,
-    stripe_product VARCHAR(255) NOT NULL,
-    stripe_price VARCHAR(255) NOT NULL,
-    quantity INTEGER DEFAULT 1,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-```
-
-### features
-Additional user preferences.
-
-```sql
-CREATE TABLE features (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255) NOT NULL,
-    scope VARCHAR(255) NOT NULL, -- 'User:123' or 'global'
-    value TEXT NOT NULL, -- Serialized value
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(name, scope)
-);
-```
-
-## Legal & Compliance Tables
-
-### user_legal_acceptances
-Terms acceptance tracking for compliance.
-
-```sql
-CREATE TABLE user_legal_acceptances (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    terms_accepted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    ip_address INET,
-    user_agent TEXT,
-    UNIQUE(user_id)
-);
-```
-
-### user_achievements
-Gamification and onboarding progress tracking.
-
-```sql
-CREATE TABLE user_achievements (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    achievement_id VARCHAR(50) NOT NULL,
-    unlocked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    metadata JSONB DEFAULT '{}',
-    UNIQUE(user_id, achievement_id)
-);
-```
-
-## Indexes
-
-Performance-optimized indexes for common queries.
+## Performance Indexes
 
 ```sql
 -- User queries
@@ -197,7 +163,7 @@ CREATE INDEX idx_scans_completed ON scans(completed_at DESC) WHERE status = 'com
 
 -- Module queries
 CREATE INDEX idx_scan_modules_scan ON scan_modules(scan_id);
-CREATE INDEX idx_scan_modules_type ON scan_modules(module);
+CREATE INDEX idx_scan_modules_raw_gin ON scan_modules USING GIN(raw);
 
 -- Report queries
 CREATE INDEX idx_reports_user ON reports(user_id, generated_at DESC);
@@ -206,118 +172,95 @@ CREATE INDEX idx_reports_scan ON reports(scan_id);
 
 ## Model Relationships
 
-### Eloquent Relationships
-
-```
-User Model:
-- hasMany: domains, scans, reports
-- hasOne: subscription (via Cashier)
-
-Domain Model:
-- belongsTo: user
-- hasMany: scans
-- hasOne: latestScan
-
-Scan Model:
-- belongsTo: domain, user
-- hasMany: modules
-- hasOne: report
-
-ScanModule Model:
-- belongsTo: scan
-
-Report Model:
-- belongsTo: scan, user
-```
-
-## JSONB Data Structures
-
-### scan_modules.raw Structure
-
-```json
+```php
+// User Model
+public function domains(): HasMany
 {
-  "ssl_tls": {
-    "certificate": {
-      "issuer": "Let's Encrypt",
-      "subject": "example.com",
-      "validFrom": "2024-01-01T00:00:00Z",
-      "validTo": "2024-12-31T23:59:59Z",
-      "daysRemaining": 90,
-      "san": ["example.com", "www.example.com"]
-    },
-    "protocol": {
-      "version": "TLSv1.3",
-      "cipher": "TLS_AES_256_GCM_SHA384",
-      "keyExchange": "ECDHE",
-      "keySize": 256
-    },
-    "vulnerabilities": [],
-    "grade": "A+"
-  },
-  
-  "security_headers": {
-    "headers": {
-      "strict-transport-security": "max-age=31536000; includeSubDomains",
-      "content-security-policy": "default-src 'self'",
-      "x-frame-options": "DENY",
-      "x-content-type-options": "nosniff",
-      "referrer-policy": "strict-origin-when-cross-origin"
-    },
-    "missing": [],
-    "warnings": []
-  },
-  
-  "dns_email": {
-    "spf": {
-      "record": "v=spf1 include:_spf.google.com ~all",
-      "valid": true
-    },
-    "dkim": {
-      "selector": "google",
-      "valid": true,
-      "publicKey": "..."
-    },
-    "dmarc": {
-      "record": "v=DMARC1; p=reject; rua=mailto:dmarc@example.com",
-      "policy": "reject",
-      "valid": true
-    },
-    "dnssec": true,
-    "caa": {
-      "records": ["0 issue \"letsencrypt.org\""],
-      "valid": true
-    }
-  }
+    return $this->hasMany(Domain::class);
+}
+
+public function scans(): HasMany
+{
+    return $this->hasMany(Scan::class);
+}
+
+// Domain Model
+public function user(): BelongsTo
+{
+    return $this->belongsTo(User::class);
+}
+
+public function scans(): HasMany
+{
+    return $this->hasMany(Scan::class)->latest();
+}
+
+public function latestScan(): HasOne
+{
+    return $this->hasOne(Scan::class)->latestOfMany();
+}
+
+// Scan Model
+public function domain(): BelongsTo
+{
+    return $this->belongsTo(Domain::class);
+}
+
+public function modules(): HasMany
+{
+    return $this->hasMany(ScanModule::class);
+}
+
+public function report(): HasOne
+{
+    return $this->hasOne(Report::class);
 }
 ```
 
-## Data Retention Policies
+## Performance Optimization for <200ms
 
+### Dashboard Query (Target: <100ms)
+```sql
+-- Single optimized query for dashboard metrics
+SELECT 
+    AVG(last_scan_score)::INTEGER as avg_score,
+    COUNT(*) as total_domains,
+    COUNT(CASE WHEN last_scan_score < 60 THEN 1 END) as critical_issues
+FROM domains 
+WHERE user_id = ? AND is_active = true;
+```
+
+### Caching Strategy
+```php
+// Dashboard metrics (5 minute cache)
+Cache::remember("dashboard.{$userId}", 300, function() {
+    return [
+        'avg_score' => $user->domains()->avg('last_scan_score'),
+        'domain_count' => $user->domains()->count(),
+        'last_scan' => $user->scans()->latest()->first()
+    ];
+});
+```
+
+### Laravel Cloud Configuration
+```env
+DB_POOL_SIZE=10
+DB_STATEMENT_TIMEOUT=30000
+CACHE_DRIVER=redis
+QUEUE_CONNECTION=redis
+```
+
+## Data Retention & Migration Strategy
+
+### Retention Policies
 - **Scans**: 90 days (configurable)
 - **Reports**: 1 year
-- **Audit logs**: 2 years
 - **User data**: Until account deletion
-- **Failed jobs**: 7 days
 
-## Migration Notes
-
-1. Run Laravel's default migrations first
-2. Run Cashier migrations: `php artisan migrate:cashier`
-3. Run application migrations in order
-5. Seed test data only in development
-
-## Performance Considerations
-
-- Use UUID for better distribution in clustered environments
-- JSONB for flexible scanner data without schema changes
-- Partial indexes for active record queries
-- Consider partitioning scans table by created_at for large datasets
-- Enable pg_stat_statements for query optimization
-
-## Related Documentation
-
-- **Technical Architecture**: See `/docs/technical.md` for system design and scanner implementation
-- **Product Specifications**: See `/docs/product.md` for business requirements
-- **UI/UX Design**: See `/docs/design.md` for interface specifications
-- **Testing Strategy**: See `/docs/testing.md` for database testing patterns
-- **Development Workflow**: See `/docs/execution.md` for migration and setup instructions
+### Deployment Commands
+```bash
+# Production deployment
+php artisan migrate --force
+php artisan config:cache
+php artisan route:cache
+```

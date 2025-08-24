@@ -1,362 +1,291 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude and AI assistants when working with the Achilleus repository.
 
 ## Project Overview
 
 **Achilleus** - Security monitoring SaaS for developers managing multiple websites  
 **Target**: Freelancers and small businesses needing affordable security monitoring  
 **Price**: $27/month for 10 domains with unlimited scans  
-**Stack**: Laravel 12 (with (https://laravel.com/docs/12.x/starter-kits) starter kit) + React 19 + Shadcn/ui + Inertia.js + Laravel Reverb + Laravel Cloud
+**Timeline**: 28-30 day development plan across 16 phases with 365 comprehensive tests
 
 ## Domain Configuration
 - **Primary Domain**: https://achilleus.so
 - **Support Email**: support@achilleus.so
 - **Laravel Cloud URL**: https://achilleus.so
-## Email Strategy (MVP)
-- Transactional emails via Laravel's mail system
-- Critical emails only: Welcome, Payment confirmation, Trial expiry
-- No marketing emails or notifications in MVP
-- Support handled manually at support@achilleus.so
-## Key Resources
-- **Laravel 12**: https://laravel.com/docs/12.x
-- **Laravel Starter Kits**: https://laravel.com/docs/12.x/starter-kits (we use React kit)
-- **React 19**: https://react.dev/
-- **Laravel Cloud**: https://cloud.laravel.com/
-- **Shadcn/ui**: https://ui.shadcn.com/
-- **Laravel Reverb**: https://reverb.laravel.com/
-- **Laravel Cashier (Stripe)**: https://laravel.com/docs/12.x/billing
-- **Laravel Precognition**: https://laravel.com/docs/12.x/precognition
-- **Laravel Socialite**: https://laravel.com/docs/12.x/socialite
-- **Laravel Boost**: https://boost.laravel.com/ (AI development assistant)
-- **Landing Page**: Salient template from https://tailwindcss.com/plus/templates/salient  
 
 ## Documentation Structure
+- `/docs/execution.md` - 15-phase roadmap (25 days) with test targets
+- `/docs/database.md` - Complete schema with PostgreSQL 15
+- `/docs/technical.md` - Scanner implementations and architecture
+- `/docs/testing.md` - Testing strategy with 365 test target
+- `/docs/product.md` - Product specifications and user journeys
+- `/docs/design.md` - UI/UX specifications with mockups
 
-- `/docs/technical.md` - System architecture, scanner implementation, database schema
-- `/docs/product.md` - Product specifications, UI mockups, business rules  
-- `/docs/execution.md` - Development phases, testing strategy, deployment plan
-- `/docs/database.md` - Complete database schema and relationships
-- `/docs/design.md` - UI/UX specifications and component library
-- `/docs/testing.md` - Testing strategy and patterns
+## Development Commands
 
-## Laravel Boost Integration
+### Achilleus Commands (Custom CLI)
+```bash
+# Generate implementation plan for a phase
+achilleus plan "Phase Name"
 
-**Laravel Boost** is an MCP server that provides AI assistants with deep project context and Laravel-specific knowledge. When active, AI can inspect your database, run Tinker commands, search Laravel 12 docs, read logs, and understand your actual project structure.
+# Generate tests for the phase
+achilleus test "Phase Name"
 
-**Installation**: See `/docs/execution.md` Phase 0 for setup instructions.
+# Generate code implementation for the phase
+achilleus code "Phase Name"
+```
 
-**Key Capabilities**: Database queries, code execution, route inspection, configuration access, log analysis, test generation following project conventions.
+### Standard Laravel Commands
+```bash
+# Create models, controllers, etc.
+php artisan make:model Domain -mfsc --all
 
-**Security**: Boost only runs in development, respects .env boundaries, and automatically includes SSRF protection in generated code.
+# Run tests by phase
+php artisan test --filter="Phase1Test"
+php artisan test --parallel
+php artisan test --coverage --min=80
+```
 
-## Development Workflow Shortcuts
+## Critical Security Requirements
 
-### Core Commands
+### SSRF Protection (NetworkGuard)
+- **ALWAYS** validate URLs before external requests
+- Block private IPs (192.168.x, 10.x, 172.16.x, 169.254.169.254)
+- Enforce HTTPS-only for domains
+- Throw SecurityException on violations
 
-- **achilleus-plan**: Break down → Security review → Test cases → SSRF validation
-- **achilleus-test**: Tests first (Unit → Feature → E2E → Security validation)
-- **achilleus-code**: Laravel conventions → Shadcn/ui → Security-first → Error handling
-- **achilleus-verify**: Run all tests in parallel, type checking, and E2E tests
-
-## Security-First Development (Critical)
-
-### S1: Input Validation & SSRF Protection
-- **ALWAYS** use Form Requests for validation
-- **ALWAYS** validate URLs with NetworkGuard before external requests
-- Enforce HTTPS-only domains
-- Use PublicUrl validation rule
-
-### S2: Scanner Implementation Pattern
-- Extend AbstractScanner for all scanners
-- Base class handles SSRF, retries, rate limiting automatically
-- Set appropriate timeout and retry attempts
-- Jobs dispatched to Laravel Cloud managed workers
-
-### S3: Rate Limiting & Authentication
-- Two-tier rate limiting: User level (10 scans/minute) and Scanner level
-- Use throttle middleware on scan endpoints
-- Always authorize domain access with policies
-- Enforce trial expiry with middleware
-
-## Best Practices Checklist
-
-### BP1: Laravel Patterns
-- [ ] Use Form Requests for all validation
-- [ ] Implement proper authorization policies  
-- [ ] Use Eloquent relationships correctly
-- [ ] Apply middleware consistently
-- [ ] Handle errors gracefully with try/catch
-
-### BP2: React + Shadcn/ui
-- [ ] Use TypeScript interfaces consistently
-- [ ] Implement React Hook Form + Zod validation
-- [ ] Apply Shadcn/ui components (Button, Card, Form, Table, Dialog)
-- [ ] Handle loading states and errors
-- [ ] Ensure dark theme consistency
-
-### BP3: Database & Models
-- [ ] Create migrations before models
-- [ ] Define relationships in models
-- [ ] Use appropriate data types (JSONB for scan results)
-- [ ] Add proper indexes for performance
-- [ ] Implement soft deletes where needed
-
-### BP4: Testing Strategy
-- [ ] Write tests BEFORE implementation (TDD)
-- [ ] Unit tests for scanners and services
-- [ ] Feature tests for API endpoints
-- [ ] E2E tests with Playwright for critical flows
-- [ ] Test security validation and SSRF protection
-
-## Code Quality Standards
-
-### C1: Security Requirements
-- HTTPS only domains (no HTTP allowed)
-- NetworkGuard validation on all external requests
-- Input validation on all user inputs
-- Rate limiting on scan operations
-- SSRF protection against private IPs and localhost
-
-### C2: Performance Standards
-- Dashboard load time < 500ms
-- Scan completion < 30 seconds
-- API responses < 200ms
-- Database queries optimized with proper indexes
-- Caching implemented for frequently accessed data
-
-### C3: UI/UX Standards
-- Consistent dark theme (#0a0a0b background)
-- Mobile-responsive design
-- Loading states for all async operations
-- Empty states with actionable guidance
-- Error messages with clear next steps
-
-### C4: Code Organization
-- Follow Laravel directory structure
-- Use service classes for business logic
-- Keep controllers thin (max 20 lines per method)
-- Extract reusable components
-- Document complex business logic
-
-## Scanner Development with Boost
-
-Laravel Boost enables AI to:
-- Inspect existing scanner implementations
-- Query scan results to understand patterns
-- Test SSRF protection interactively
-- Generate tests based on actual data
-- Debug failures by reading logs and database state
-- Test scanners with real domains in development
-
-See `/docs/technical.md` for detailed scanner architecture and implementation patterns.
-
-## Scanner Architecture (Core Feature)
-
-### Scanner Types & Weights
-- **SSL/TLS Scanner**: 40% weight - Certificate validation, protocol analysis
-- **Security Headers Scanner**: 30% weight - HSTS, CSP, security headers
-- **DNS/Email Scanner**: 30% weight - SPF, DKIM, DMARC validation
-
-### Implementation Requirements
+### Scanner Architecture
 - All scanners extend AbstractScanner
-- Common functionality: rate limiting, SSRF protection, retry logic
-- Each scanner implements performScan() method
-- Results stored as ModuleResult with score, status, and raw data
+- Implement retry logic (3 attempts)
+- Set timeout to 30 seconds
+- Handle three exception types:
+  - RetryableException (temporary issues)
+  - ConfigurationException (user must fix)
+  - SecurityException (policy violations)
 
-### Security Scoring
-- Grades: A+ (95-100), A (90-94), B+ (85-89), B (80-84), C (70-79), D (60-69), F (0-59)
-- Weighted calculation: Total = (SSL×0.4) + (Headers×0.3) + (DNS×0.3)
-- When a scanner fails: Redistribute weights proportionally among working scanners
-- Store raw scan data in JSONB for detailed analysis
+### Scanner Weights & Scoring
+- **SSL/TLS Scanner**: 40% weight
+- **Security Headers Scanner**: 30% weight
+- **DNS/Email Scanner**: 30% weight
+- **Grade Calculation**: A+ (95-100), A (90-94), B+ (85-89), B (80-84), C (70-79), D (60-69), F (0-59)
+- **Score Redistribution**: When scanner fails, redistribute weights proportionally
 
-See `/docs/technical.md` for complete implementation details.
+## Business Rules
 
-## Database Schema
+### Domain Management
+- **Limit**: Maximum 10 domains per user (strict enforcement)
+- **Input UX**: Clean domain names only (e.g., "example.com")
+- **Processing**: Automatic HTTPS prepending for scanning
+- **Normalization**: Remove protocol, www, trailing slash, paths
+- **Validation**: Real-time feedback with helpful error messages
+- **Duplicate Prevention**: No duplicate domains per user
 
-See **database.md** for complete schema, relationships, indexes, and JSONB structures.
+### Trial & Subscription
+- **Trial Period**: 14 days from registration (OAuth users included)
+- **Trial Enforcement**: Block features after expiry (return 402)
+- **Subscription**: $27/month via Laravel Cashier
+- **Grace Period**: 3 days for failed payments
+- **Access Levels**: Different for trial, active, expired states
 
-### Core Tables
-- **users**: Authentication, billing, OAuth support
-- **domains**: User domains with scan history
-- **scans**: Security scan records with scoring
-- **scan_modules**: Individual scanner results
-- **reports**: Generated PDF reports
+### User Limits
+- **Domains**: 10 maximum
+- **Scans**: 10 per minute rate limit
+- **Reports**: 10 per day generation limit
+- **API Calls**: Rate limited per endpoint
 
-### Key Relationships
-- User hasMany Domains, Scans, Reports
-- Domain belongsTo User, hasMany Scans
-- Scan belongsTo Domain/User, hasMany ScanModules
+## UI/UX Standards
 
-## API Design Patterns
+### Design Philosophy
+- **Extend, Don't Rebuild**: Work with Laravel React starter template, don't rearrange
+- **Use Built-In Components**: Leverage existing Shadcn UI components from starter kit
+- **Minimal Template Modifications**: Final project should look like the starter template essentially
+- **Reference Documentation**: Always review component docs before implementation
 
-### Standard CRUD Controllers
-- **GET /domains** - List user domains
-- **POST /domains** - Create new domain (with validation)
-- **GET /domains/{id}** - Show domain details
-- **DELETE /domains/{id}** - Remove domain
+### Starter Template Structure
+- **Layout**: Use existing sidebar layout (don't rebuild navigation)
+- **Theme**: Built-in dark theme from starter kit (preserve existing dark mode functionality)
+- **Components**: Extend existing Shadcn components in `resources/js/`
+- **Authentication**: Keep existing auth flow, minimal modifications only
+- **Sidebar Navigation**: Remove "Repository" section, keep "Documentation", add "Subscription" tab in settings
 
-### Scan Operations
-- **POST /domains/{id}/scan** - Trigger individual scan
-- **POST /scans/bulk** - Scan all user domains
-- Returns scan ID for tracking progress
-- Jobs dispatched to Laravel Cloud workers
+### Component References
+- **Shadcn Components**: https://ui.shadcn.com/docs/components
+- **Charts**: https://ui.shadcn.com/charts/bar#charts (for dashboard metrics)
+- **Blocks**: https://ui.shadcn.com/blocks (for layout patterns)
+- **Installation**: Use `npx shadcn@latest add [component]` for additional components
 
-## Frontend Patterns
+### Key Components (Using Starter Kit)
+- **Dashboard Cards**: Use existing card components with security metrics
+- **Forms**: Use built-in form components for domain management
+- **Tables**: Use existing table components for domain lists
+- **Modals**: Use built-in dialog components
+- **Settings Pages**: Use existing settings layout style for subscription tab (consistent with Profile/Password/Appearance)
 
-### Page Structure (Inertia.js)
-- Use AuthenticatedLayout for protected pages
-- Include Head component for page titles
-- PageHeader with title and action buttons
-- Data passed as props from Laravel controllers
+### Performance Targets
+- **Dashboard Load**: < 200ms (aggressive optimization required)
+- **Scan Completion**: < 30 seconds
+- **API Response**: < 200ms (< 100ms for cached data)
+- **Test Suite**: < 30 seconds with parallel execution
+- **Database Queries**: < 50ms (individual queries)
+- **Static Assets**: < 100ms (with CDN)
 
-### Form Handling
-- React Hook Form for form state management
-- Zod for schema validation
-- Laravel Precognition for live validation
-- Consistent error handling and display
+## Testing Strategy
 
-See `/docs/design.md` for complete UI specifications and component library.
+### Test Distribution (365 Total)
+- **Phase 1-3**: Foundation (75 tests)
+- **Phase 4-6**: Core Scanners (85 tests)
+- **Phase 7-10**: Application Logic (110 tests)
+- **Phase 11-15**: Advanced Features (120 tests)
 
-## Laravel Package Integration
+### Mocking Requirements
+- **Always Mock**: Stripe, OAuth, External HTTP, Email, Queue Jobs
+- **Never Test**: Laravel framework, external APIs, database queries
+- **Focus On**: Business logic, security rules, user workflows
 
-### Laravel Cashier (Stripe Billing)
-- $27/month subscription management
-- 14-day trial period
-- Webhook handling for payment events
-- Subscription status tracking
-
-### Laravel Precognition (Live Validation)
-- Real-time form validation
-- No duplicate validation rules
-- Frontend-backend sync
-- Instant user feedback
-
-### Laravel Socialite (OAuth)
-- GitHub and Google authentication
-- Automatic user creation
-- Trial period for OAuth users
-- Seamless login flow
-
-See `/docs/technical.md` for implementation patterns and `/docs/execution.md` for setup instructions.
-
-## Testing Approach
-
-See **testing.md** for complete testing strategy, patterns, and examples.
-
-### Testing Stack
-- **Unit Tests**: Pest PHP
-- **Feature Tests**: Laravel HTTP testing
-- **E2E Tests**: Playwright
-- **Security Tests**: Custom assertions
-
-### Key Testing Areas
-- Scanner functionality with real domains
-- SSRF protection validation
-- Rate limiting enforcement
-- Authorization policies
-- Trial period calculations
-
-## Deployment & Production
-
-### Laravel Cloud Configuration
-- **URL**: https://cloud.laravel.com/
-- Database: PostgreSQL with hibernation (managed)
-- Queue: Redis with auto-scaling workers (no manual config needed)
-- Storage: S3 for PDF reports
-- Monitoring: Built-in application performance monitoring
-- Real-time: Laravel Reverb for WebSocket connections
-- Workers: Automatic process management and restarts
-
-### Environment Variables
+## Environment Variables (Production)
 ```env
-# Core Configuration
-APP_ENV=production
-APP_DEBUG=false
 APP_URL=https://achilleus.so
-
-# Database
 DB_CONNECTION=pgsql
-DB_DATABASE=achilleus_production
+QUEUE_CONNECTION=redis
+CACHE_DRIVER=redis
 
-# Queue & Cache (Laravel Cloud managed)
-QUEUE_CONNECTION=redis  # Cloud provides Redis
-CACHE_DRIVER=redis      # Auto-configured by Cloud
-
-# Stripe (Laravel Cashier)
 STRIPE_KEY=pk_live_...
 STRIPE_SECRET=sk_live_...
 STRIPE_WEBHOOK_SECRET=whsec_...
 CASHIER_CURRENCY=usd
-CASHIER_CURRENCY_LOCALE=en_US
 
-# OAuth Providers (Laravel Socialite)
-GITHUB_CLIENT_ID=...
-GITHUB_CLIENT_SECRET=...
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
+WORKOS_CLIENT_ID=...
+WORKOS_API_KEY=...
+WORKOS_REDIRECT_URL=https://achilleus.so/auth/workos/callback
 
-# Security
-BCRYPT_ROUNDS=12
-SESSION_SECURE_COOKIE=true
+MAIL_MAILER=resend
+RESEND_API_KEY=re_...
 ```
 
-## Common Commands
+## Laravel Cloud Deployment
 
-### Development
-- `php artisan migrate --seed` - Database setup
-- `php artisan queue:work` - Local queue processing
-- `npm run dev` - Frontend development server
-- `php artisan boost:mcp` - Start AI context server
+### Infrastructure
+- **Hosting**: Laravel Cloud only (no VPS/Docker)
+- **Database**: Managed PostgreSQL 15
+- **Queue**: Managed Redis workers
+- **Storage**: S3 for PDF reports
+- **SSL**: Automatic certificates
+
+### Deployment Commands
+```bash
+git push production main
+php artisan migrate --force
+php artisan config:cache
+php artisan route:cache
+```
+
+## Key Implementation Files
+
+### Phase 1-3: Foundation
+- `app/Support/NetworkGuard.php` - SSRF protection
+- `app/Services/Scanners/AbstractScanner.php` - Base scanner class
+- Database migrations and models
+
+### Phase 4-6: Core Scanners
+- `app/Services/Scanners/SslTlsScanner.php` - SSL/TLS implementation
+- `app/Services/Scanners/SecurityHeadersScanner.php` - Headers implementation
+- `app/Services/Scanners/DnsEmailScanner.php` - DNS/Email implementation
+
+### Phase 7-10: Application Logic
+- `app/Services/ScanOrchestrator.php` - Manages scan execution
+- `app/Jobs/RunDomainScan.php` - Async scan job
+- `resources/js/Pages/Dashboard.tsx` - Dashboard with security metrics
+- `resources/js/Pages/Domains/` - Domain management components
+
+### Phase 11-15: Advanced Features
+- `app/Services/ReportGenerator.php` - PDF generation
+- `app/Jobs/GenerateReport.php` - Async report job
+- Payment integration via Laravel Cashier
+- WorkOS authentication enhancement
+
+## 16-Phase Development Roadmap
+
+### Foundation (Days 1-6)
+1. **Project Setup & Authentication** - Laravel + React starter kit + WorkOS
+2. **Database Schema & Models** - Complete data layer
+3. **Security Infrastructure** - NetworkGuard + AbstractScanner
+
+### Core Scanners (Days 7-12)
+4. **SSL/TLS Scanner** - Certificate analysis (40% weight)
+5. **Security Headers Scanner** - HTTP headers analysis (30% weight)
+6. **DNS/Email Scanner** - SPF/DKIM/DMARC/DNSSEC (30% weight)
+
+### Application Logic (Days 13-20)
+7. **Scan Orchestration** - Job queue + WebSocket updates
+8. **Core UI** - Dashboard + domain list extending starter template
+9. **Domain Detail** - Scan results + configuration
+10. **Settings + Profile** - User management + activity
+10.5. **Email Notifications** - Certificate/trial expiry warnings
+
+### Advanced Features (Days 21-30)
+11. **Report Generation** - PDF creation + S3 storage
+12. **WorkOS Authentication** - Enhanced auth features (Passkeys, Magic Auth)
+13. **Payment Integration** - Stripe + $27/month subscriptions + subscription settings tab
+14. **Landing Page** - Marketing site + SEO
+15. **Production Polish** - Laravel Cloud deployment + monitoring
+
+## Common Pitfalls to Avoid
+
+### File Management & Template Usage
+- ❌ Never create duplicate files
+- ❌ Always check if file exists before creating new ones
+- ❌ Use TSX files for React components (never JSX)
+- ❌ Don't rebuild what the starter template already provides
+- ❌ Don't rearrange the existing template structure
+- ✅ Extend existing components and layouts
+- ✅ Follow Laravel Starter Kit conventions
+- ✅ Review Shadcn documentation before implementation
+
+### TypeScript & React Requirements
+- ✅ All React components MUST use .tsx extension
+- ✅ Define interfaces for all component props
+- ✅ Use proper TypeScript event handler types:
+  - `React.FormEvent<HTMLFormElement>` for form submissions
+  - `React.ChangeEvent<HTMLInputElement>` for input changes
+  - `React.MouseEvent<HTMLButtonElement>` for button clicks
+  - `React.KeyboardEvent<HTMLElement>` for keyboard events
+- ✅ Import types from React: `import { useState } from 'react'`
+- ✅ Use generic type parameters: `useState<FormData>(initialState)`
+- ✅ Export components as named functions with proper interfaces
+
+### Security
+- ❌ Never skip NetworkGuard validation
+- ❌ Don't allow HTTP domains (auto-prepend HTTPS for scanning)
+- ❌ Never log sensitive data (API keys, passwords)
+- ❌ Don't trust user input without validation
+- ✅ Use clean domain input with real-time validation
+- ✅ Normalize domains before storage (remove www, protocol, paths)
+- ✅ Provide helpful error messages for common user mistakes
 
 ### Testing
-- `php artisan test --parallel` - Run all tests
-- `npm run type-check` - TypeScript validation
-- `npx playwright test` - E2E tests
+- ❌ Don't test external APIs (mock them)
+- ❌ Avoid testing Laravel framework features
+- ❌ Don't exceed 365 tests
+- ❌ Never use real Stripe/OAuth in tests
 
-### Quality
-- `php artisan pint` - PHP code style
-- `npm run lint` - JavaScript linting
+### Performance
+- ❌ Don't make synchronous external calls
+- ❌ Avoid N+1 queries (use eager loading)
+- ❌ Don't skip caching for expensive operations
+- ❌ Never process scans synchronously
 
-### Security Testing
-- Test SSRF protection with localhost/private IPs
-- Verify rate limiting (10 scans/minute)
-- Check authorization policies
+## Success Criteria
 
-See `/docs/testing.md` for comprehensive testing commands.
+### MVP Completeness
+- ✅ All 15 phases completed
+- ✅ 365 tests passing
+- ✅ All features functional
+- ✅ Deployed to Laravel Cloud
+- ✅ Processing real payments
 
-## Critical Security Reminders
-
-1. **NEVER** make HTTP requests without NetworkGuard validation
-2. **ALWAYS** validate user input with Form Requests
-3. **NEVER** trust external data without sanitization
-4. **ALWAYS** use HTTPS-only domain validation
-5. **NEVER** log sensitive data (URLs, API keys, personal info)
-6. **ALWAYS** implement proper rate limiting
-7. **NEVER** expose stack traces in production
-8. **ALWAYS** authorize domain access with policies
-9. **ALWAYS** enforce trial expiry with EnsureSubscriptionActive middleware
-10. **NEVER** allow scanning features without active subscription or trial
-
-## Support & Debugging
-
-### Common Issues
-- **SSRF Blocked**: Check NetworkGuard configuration, ensure public URLs only
-- **Scan Timeouts**: Verify timeout settings in scanner classes
-- **Queue Jobs Failing**: Check failed_jobs table, Laravel Cloud logs
-- **Rate Limiting**: Monitor cache keys, adjust limits in config
-- **Support Requests**: Direct to support@achilleus.so (manual handling in MVP)
-
-### Logging Strategy
-- Log security events (SSRF attempts, auth failures)
-- Track scanner errors with context
-- Monitor performance metrics
-- Use appropriate log levels (error, warning, info)
-
-## Additional Resources
-
-- **Technical Details**: See `/docs/technical.md` for architecture and implementation
-- **Database Schema**: See `/docs/database.md` for complete schema
-- **Testing Strategy**: See `/docs/testing.md` for TDD approach
-- **UI/UX Specs**: See `/docs/design.md` for interface guidelines
-- **Development Phases**: See `/docs/execution.md` for timeline and workflow
+### Quality Metrics
+- ✅ 80% code coverage on business logic
+- ✅ Dashboard loads < 500ms
+- ✅ Zero critical security issues
+- ✅ All user journeys working
