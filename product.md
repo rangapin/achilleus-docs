@@ -102,14 +102,15 @@ Achilleus provides simple, automated security monitoring that:
 
 **Three Scanner Modules**:
 
-#### SSL/TLS Scanner (40% weight)
+#### SSL/TLS Scanner (50% weight)
 - Certificate expiry monitoring
 - Protocol version checking (TLS 1.2+)
 - Cipher strength analysis
 - Certificate chain validation
 - Hostname verification
+- **Produces SSL Grade**: Industry-standard A+ to F rating
 
-#### Security Headers Scanner (30% weight)
+#### Security Headers Scanner (20% weight)
 - HSTS (Strict Transport Security)
 - CSP (Content Security Policy)
 - X-Frame-Options
@@ -123,21 +124,21 @@ Achilleus provides simple, automated security monitoring that:
 - DNSSEC status
 - CAA record detection
 
-**Scoring System**:
-- 0-100 point scale
-- Letter grades: A+ (95+), A (90-94), B+ (85-89), B (80-84), C (70-79), D (60-69), F (0-59)
-- Weighted average across modules
+**Dual Scoring System**:
+- **Overall Security Score**: 0-100 point scale with letter grades
+- **SSL Grade**: Separate A+ to F rating following industry standards
+- Weighted average across modules for overall score
 - Automatic weight redistribution if scanner fails
 
 ### 3. Dashboard
 **Purpose**: Quick security overview
 
-**Components**:
-- **Overall Score Card**: Average across all domains
-- **Domains Card**: Active/total count
-- **Last Scan Card**: Most recent scan with domain name
-- **Issues Card**: Count of critical problems
-- **Trend Chart**: Score history over time (7d/30d/90d/1y)
+**Top 3 Cards**:
+- **Security Score Card**: Average security score across all domains
+- **Active Domains Card**: Number of domains being monitored (e.g., 3/10)
+- **Critical Issues Card**: Count of critical security problems
+
+**Trend Chart**: Interactive bar chart showing daily scores for last 30 days (shadcn/ui)
 
 **Real-time Updates**:
 - WebSocket connection for live scan progress
@@ -160,7 +161,26 @@ Achilleus provides simple, automated security monitoring that:
 - Shareable download links (1-hour expiry)
 - Email delivery option
 
-### 5. User Management
+### 5. Domain Detail View
+**Purpose**: In-depth analysis of individual domain security
+
+**Top Row Cards**:
+- **Security Score**: Overall composite score (0-100) with grade
+- **SSL Grade**: Industry-standard SSL rating (A+ to F)
+- **Last Scan**: Time since last scan with status
+
+**Bottom Row Cards**:
+- **SSL/TLS Scanner Results**: Score out of 50 with SSL grade
+- **Security Headers Results**: Score out of 20 with grade
+- **DNS/Email Security Results**: Score out of 30 with grade
+
+**Detailed Analysis Section**:
+- Expandable sections for each scanner
+- Specific issues with point deductions
+- Actionable recommendations
+- Color-coded status indicators
+
+### 6. User Management
 **Purpose**: Account and subscription handling
 
 **Authentication Options**:
@@ -173,7 +193,7 @@ Achilleus provides simple, automated security monitoring that:
 - Full feature access during trial
 - Automatic conversion to paid
 
-### 6. Email Notifications
+### 7. Email Notifications
 **Purpose**: Proactive security monitoring alerts
 
 **Notification Types**:
@@ -236,7 +256,7 @@ Achilleus provides simple, automated security monitoring that:
 6. **Justify Fees**: Uses reports to show value
 
 ### Journey 4: SSL Certificate Expiry
-1. **Warning Email**: Receives 30-day expiry notice
+1. **Warning Email**: Receives 30-day expiry notice (informational only, no score penalty)
 2. **Dashboard Alert**: Sees warning in dashboard
 3. **View Details**: Checks certificate information
 4. **Renew Certificate**: Updates SSL on server

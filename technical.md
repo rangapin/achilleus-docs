@@ -13,13 +13,13 @@
 - **CDN**: Laravel Cloud Edge Network with global CDN
 - **Hosting**: Laravel Cloud only (https://cloud.laravel.com/)
 - **Real-time**: Laravel Reverb for WebSocket connections (https://reverb.laravel.com/)
-- **Authentication**: WorkOS with Google OAuth, Passkeys, and Magic Auth
+- **Authentication**: Laravel's built-in authentication (email/password)
 - **Email**: Laravel Mail with Resend driver for notifications
 
 ### Laravel Ecosystem Packages
 - **Laravel Cashier**: Stripe subscription billing for $27/month plans
 - **Laravel Precognition**: Live form validation without duplicating rules
-- **WorkOS Laravel**: Enterprise-grade authentication and user management
+- **Laravel Breeze/Jetstream**: Authentication scaffolding with React
 
 ### Application Architecture
 ```
@@ -95,10 +95,152 @@ class NetworkGuard
 }
 ```
 
-### Rate Limiting
-- User-level: 10 scans/minute via middleware
-- Scanner-level: Per-host limits in AbstractScanner
-- Cache-based tracking with automatic expiry
+### API Rate Limiting (Laravel 12)
+
+#### Rate Limiter Configuration
+```php
+// app/Providers/AppServiceProvider.php
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+
+public function boot(): void
+{
+    // API endpoints rate limiting
+    RateLimiter::for('api', function (Request $request) {
+        return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+    });
+    
+    // Domain operations
+    RateLimiter::for('domains', function (Request $request) {
+        return [
+            Limit::perMinute(60)->by($request->user()->id),  // GET requests
+            Limit::perHour(30)->by($request->user()->id),     // POST/PUT/DELETE
+        ];
+    });
+    
+    // Scan operations (critical)
+    RateLimiter::for('scans', function (Request $request) {
+        return Limit::perMinute(10)
+            ->by($request->user()->id)
+            ->response(function (Request $request, array $headers) {
+                return response()->json([
+                    'error' => 'rate_limit_exceeded',
+                    'message' => 'Maximum 10 scans per minute allowed',
+                    'retry_after' => $headers['Retry-After'],
+                ], 429);
+            });
+    });
+    
+    // Report generation
+    RateLimiter::for('reports', function (Request $request) {
+        return [
+            Limit::perMinute(30)->by($request->user()->id),  // View reports
+            Limit::perDay(10)->by($request->user()->id),     // Generate PDFs
+        ];
+    });
+    
+    // WebSocket connections
+    RateLimiter::for('websocket', function (Request $request) {
+        return Limit::perMinute(5)->by($request->user()->id);
+    });
+    
+    // Authentication attempts
+    RateLimiter::for('auth', function (Request $request) {
+        return [
+            Limit::perMinute(5)->by($request->ip()),
+            Limit::perHour(20)->by($request->ip()),
+        ];
+    });
+}
+```
+
+#### API Endpoint Rate Limits
+| Endpoint | Method | Limit | Window | Key |
+|----------|--------|-------|--------|-----|
+| `/api/domains` | GET | 60/min | 1 minute | user_id |
+| `/api/domains` | POST | 30/hour | 1 hour | user_id |
+| `/api/domains/{id}` | PUT/DELETE | 30/hour | 1 hour | user_id |
+| `/api/scans` | POST | 10/min | 1 minute | user_id |
+| `/api/scans/{id}` | GET | 60/min | 1 minute | user_id |
+| `/api/reports` | GET | 30/min | 1 minute | user_id |
+| `/api/reports/generate` | POST | 10/day | 24 hours | user_id |
+| `/api/user/profile` | GET | 60/min | 1 minute | user_id |
+| `/api/user/settings` | PUT | 20/hour | 1 hour | user_id |
+| `/auth/login` | POST | 5/min, 20/hour | 1 min, 1 hour | IP |
+| `/auth/register` | POST | 3/hour | 1 hour | IP |
+| `/api/webhook/*` | POST | 100/min | 1 minute | stripe_account |
+
+#### Route Implementation
+```php
+// routes/api.php
+Route::middleware(['auth:sanctum', 'verified'])->group(function () {
+    // Domain management
+    Route::middleware('throttle:domains')->group(function () {
+        Route::get('/domains', [DomainController::class, 'index']);
+        Route::post('/domains', [DomainController::class, 'store']);
+        Route::put('/domains/{domain}', [DomainController::class, 'update']);
+        Route::delete('/domains/{domain}', [DomainController::class, 'destroy']);
+    });
+    
+    // Scanning
+    Route::middleware('throttle:scans')->group(function () {
+        Route::post('/scans', [ScanController::class, 'store']);
+        Route::post('/domains/{domain}/scan', [ScanController::class, 'scanDomain']);
+    });
+    
+    // Reports
+    Route::middleware('throttle:reports')->group(function () {
+        Route::get('/reports', [ReportController::class, 'index']);
+        Route::post('/reports/generate', [ReportController::class, 'generate'])
+            ->middleware('throttle:10,1440'); // 10 per day (1440 minutes)
+    });
+});
+```
+
+#### Scanner-Level Rate Limiting
+```php
+// Per-host rate limits in AbstractScanner
+private function checkRateLimit(string $url): bool
+{
+    $host = parse_url($url, PHP_URL_HOST);
+    $key = "scanner:{$this->name()}:host:{$host}";
+    
+    // Different limits per scanner type
+    $limits = [
+        'ssl_tls' => 10,        // 10 scans per minute per host
+        'security_headers' => 15, // 15 scans per minute per host
+        'dns_email' => 6,       // 6 scans per minute per host (DNS is slower)
+    ];
+    
+    $limit = $limits[$this->name()] ?? 10;
+    
+    return RateLimiter::attempt(
+        $key,
+        $limit,
+        function() { return true; },
+        60 // 1 minute window
+    );
+}
+```
+
+#### Rate Limit Headers
+All rate-limited endpoints return these headers:
+- `X-RateLimit-Limit`: Maximum requests allowed
+- `X-RateLimit-Remaining`: Requests remaining in window
+- `X-RateLimit-Reset`: Unix timestamp when limit resets
+- `Retry-After`: Seconds until retry (on 429 response)
+
+#### Grace Period for Premium Users
+```php
+// Future enhancement: Different limits for subscribed users
+RateLimiter::for('scans-premium', function (Request $request) {
+    if ($request->user()->subscribed('premium')) {
+        return Limit::perMinute(30)->by($request->user()->id);
+    }
+    return Limit::perMinute(10)->by($request->user()->id);
+});
+```
 
 ## Scanner Implementation
 
@@ -142,11 +284,17 @@ class ModuleResult {
         public array $raw = [],
         public ?string $error = null,
         public float $executionTime = 0.0,
-        public int $retryCount = 0
+        public int $retryCount = 0,
+        public string $confidence = 'high', // high|medium|low - for false positive reduction
+        public ?string $platform = null // detected platform for context-aware scoring
     ) {}
     
     public static function error(string $module, string $error): self {
         return new self($module, 0, 'error', ['error' => $error], $error);
+    }
+    
+    public static function lowConfidence(string $module, int $score, array $raw): self {
+        return new self($module, $score, 'warn', $raw, null, 0, 0, 'low');
     }
 }
 ```
@@ -208,19 +356,38 @@ abstract class AbstractScanner implements Scanner
     
     abstract protected function performScan(string $url, array $context = []): ModuleResult;
     abstract protected function getRateLimitPerMinute(): int;
+    
+    // Platform detection for context-aware scoring
+    protected function detectPlatform(string $url): ?string
+    {
+        $headers = @get_headers($url, true);
+        if (!$headers) return null;
+        
+        // Check common platform indicators
+        $server = strtolower($headers['Server'] ?? '');
+        $poweredBy = strtolower($headers['X-Powered-By'] ?? '');
+        
+        if (str_contains($server, 'cloudflare')) return 'cloudflare';
+        if (str_contains($server, 'github.com')) return 'github-pages';
+        if (str_contains($poweredBy, 'next.js')) return 'nextjs';
+        if (str_contains($server, 'vercel')) return 'vercel';
+        if (str_contains($server, 'netlify')) return 'netlify';
+        
+        return null;
+    }
 }
 ```
 
 ## Core Scanners
 
-### SSL/TLS Scanner (40% Weight)
+### SSL/TLS Scanner (50% Weight)
 ```php
 namespace App\Services\Scanners;
 
 class SslTlsScanner extends AbstractScanner
 {
     public function name(): string { return 'ssl_tls'; }
-    public function getWeight(): int { return 40; }
+    public function getWeight(): int { return 50; }
     protected function getRateLimitPerMinute(): int { return 10; }
     
     protected function performScan(string $url, array $context = []): ModuleResult
@@ -228,15 +395,35 @@ class SslTlsScanner extends AbstractScanner
         $host = parse_url($url, PHP_URL_HOST);
         $port = 443;
         $score = 100;
-        $details = ['domain' => $host, 'issues' => [], 'recommendations' => [], 'strengths' => []];
+        $confidence = 'high';
+        $platform = $this->detectPlatform($url);
+        $details = ['domain' => $host, 'issues' => [], 'recommendations' => [], 'strengths' => [], 'info' => []];
         
         // Certificate Analysis
         $certAnalysis = $this->analyzeCertificate($host, $port);
         $score = min($score, $certAnalysis['score']);
         $details = array_merge_recursive($details, $certAnalysis['details']);
         
-        // Protocol Analysis
-        $protocolAnalysis = $this->analyzeProtocols($host, $port);
+        // Certificate Transparency Check
+        $ctAnalysis = $this->checkCertificateTransparency($host);
+        if ($ctAnalysis['has_ct']) {
+            $details['strengths'][] = 'Certificate Transparency enabled';
+        } else {
+            $details['info'][] = 'Certificate Transparency not detected (optional but recommended)';
+            // No penalty - CT is good practice but not required
+        }
+        
+        // OCSP Stapling Check
+        $ocspAnalysis = $this->checkOcspStapling($host, $port);
+        if ($ocspAnalysis['has_ocsp']) {
+            $details['strengths'][] = 'OCSP stapling enabled';
+        } else {
+            $details['info'][] = 'OCSP stapling not enabled (improves performance)';
+            // No penalty - it's an optimization
+        }
+        
+        // Protocol Analysis with platform awareness
+        $protocolAnalysis = $this->analyzeProtocols($host, $port, $platform);
         $score = min($score, $protocolAnalysis['score']);
         $details = array_merge_recursive($details, $protocolAnalysis['details']);
         
@@ -245,7 +432,28 @@ class SslTlsScanner extends AbstractScanner
         $score = min($score, $cipherAnalysis['score']);
         $details = array_merge_recursive($details, $cipherAnalysis['details']);
         
-        return new ModuleResult($this->name(), $score, $this->determineStatus($score), $details);
+        // HSTS Preload Check (bonus points only)
+        if ($this->checkHstsPreload($host)) {
+            $score = min(100, $score + 5); // Bonus points
+            $details['strengths'][] = 'Domain is HSTS preloaded';
+        }
+        
+        // Adjust confidence based on detection quality
+        if (!empty($details['info'])) {
+            $confidence = 'medium';
+        }
+        
+        return new ModuleResult(
+            $this->name(), 
+            $score, 
+            $this->determineStatus($score), 
+            $details,
+            null,
+            0,
+            0,
+            $confidence,
+            $platform
+        );
     }
     
     private function analyzeCertificate(string $host, int $port): array
@@ -266,7 +474,7 @@ class SslTlsScanner extends AbstractScanner
         $score = 100;
         $details = ['certificate' => []];
         
-        // Expiration check
+        // Expiration check - more forgiving thresholds
         $validTo = $certInfo['validTo_time_t'];
         $daysUntilExpiry = ($validTo - time()) / 86400;
         
@@ -274,14 +482,17 @@ class SslTlsScanner extends AbstractScanner
             $score = 0;
             $details['issues'][] = 'Certificate has expired';
         } elseif ($daysUntilExpiry <= 1) {
-            $score -= 30;
-            $details['issues'][] = "Certificate expires in {$daysUntilExpiry} day(s)";
+            $score -= 25; // Reduced from 30
+            $details['issues'][] = "Certificate expires tomorrow - urgent renewal needed";
         } elseif ($daysUntilExpiry <= 7) {
-            $score -= 15;
-            $details['issues'][] = "Certificate expires in {$daysUntilExpiry} day(s)";
+            $score -= 10; // Reduced from 15
+            $details['issues'][] = "Certificate expires in " . round($daysUntilExpiry) . " days";
+        } elseif ($daysUntilExpiry <= 14) {
+            $score -= 5; // New threshold
+            $details['recommendations'][] = "Certificate expires in " . round($daysUntilExpiry) . " days - plan renewal";
         } elseif ($daysUntilExpiry <= 30) {
-            $score -= 5;
-            $details['recommendations'][] = "Certificate expires in {$daysUntilExpiry} day(s) - consider renewal";
+            // No penalty, just information
+            $details['info'][] = "Certificate valid for " . round($daysUntilExpiry) . " more days";
         }
         
         // Hostname verification
@@ -306,7 +517,7 @@ class SslTlsScanner extends AbstractScanner
         return ['score' => $score, 'details' => $details];
     }
     
-    private function analyzeProtocols(string $host, int $port): array
+    private function analyzeProtocols(string $host, int $port, ?string $platform = null): array
     {
         $protocols = ['tls_1_0', 'tls_1_1', 'tls_1_2', 'tls_1_3'];
         $supported = [];
@@ -319,21 +530,36 @@ class SslTlsScanner extends AbstractScanner
             }
         }
         
-        // Scoring based on protocol support
+        // More nuanced scoring based on protocol support
+        $hasModernTls = in_array('tls_1_3', $supported) || in_array('tls_1_2', $supported);
+        $hasLegacyTls = in_array('tls_1_0', $supported) || in_array('tls_1_1', $supported);
+        
         if (in_array('tls_1_3', $supported)) {
             $details['strengths'][] = 'TLS 1.3 supported (excellent)';
         } elseif (in_array('tls_1_2', $supported)) {
-            $score -= 5;
-            $details['recommendations'][] = 'Consider enabling TLS 1.3';
+            // TLS 1.2 is still perfectly acceptable
+            $details['strengths'][] = 'TLS 1.2 supported (good)';
+            $details['info'][] = 'TLS 1.3 would provide marginal improvements';
         } else {
+            // Only legacy protocols - this is a real issue
             $score -= 30;
-            $details['issues'][] = 'Only legacy TLS versions supported';
+            $details['issues'][] = 'No modern TLS versions supported (TLS 1.2+ required)';
         }
         
-        if (in_array('tls_1_0', $supported) || in_array('tls_1_1', $supported)) {
-            $score -= 15;
-            $details['issues'][] = 'Legacy TLS 1.0/1.1 enabled (security risk)';
-            $details['recommendations'][] = 'Disable TLS 1.0 and 1.1';
+        // Handle legacy protocols more intelligently
+        if ($hasLegacyTls && $hasModernTls) {
+            // Has both modern and legacy - common for compatibility
+            if ($platform && in_array($platform, ['cloudflare', 'github-pages'])) {
+                // These platforms manage TLS, don't penalize
+                $details['info'][] = 'Legacy TLS enabled (managed by ' . $platform . ')';
+            } else {
+                $score -= 5; // Much smaller penalty than before
+                $details['recommendations'][] = 'Consider disabling TLS 1.0/1.1 if not required for compatibility';
+            }
+        } elseif ($hasLegacyTls && !$hasModernTls) {
+            // ONLY legacy - this is bad
+            $score -= 40;
+            $details['issues'][] = 'Only legacy TLS 1.0/1.1 available - security risk';
         }
         
         $details['protocols']['supported'] = $supported;
@@ -398,17 +624,131 @@ class SslTlsScanner extends AbstractScanner
         }
         return false;
     }
+    
+    private function checkCertificateTransparency(string $host): array
+    {
+        // Check for Certificate Transparency using alternative method
+        // Since PHP doesn't directly support SCT extraction, we check via API
+        try {
+            $context = stream_context_create([
+                'http' => ['timeout' => 5, 'user_agent' => 'Achilleus/1.0']
+            ]);
+            
+            // Use crt.sh or similar service to check CT logs
+            $ctData = @file_get_contents("https://crt.sh/?q={$host}&output=json", false, $context);
+            if ($ctData) {
+                $logs = json_decode($ctData, true);
+                return ['has_ct' => !empty($logs)];
+            }
+        } catch (\Exception $e) {
+            // CT check failed, assume not present but don't error
+        }
+        
+        return ['has_ct' => false];
+    }
+    
+    private function checkOcspStapling(string $host, int $port): array
+    {
+        // Check OCSP stapling support
+        $context = stream_context_create([
+            'ssl' => [
+                'capture_peer_cert' => true,
+                'capture_peer_cert_chain' => true,
+                'verify_peer' => false,
+                'SNI_enabled' => true,
+                'peer_name' => $host,
+            ]
+        ]);
+        
+        $stream = @stream_socket_client("ssl://{$host}:{$port}", $errno, $errstr, 10, STREAM_CLIENT_CONNECT, $context);
+        
+        if ($stream) {
+            $params = stream_context_get_params($stream);
+            fclose($stream);
+            
+            // Check if OCSP response is stapled (simplified check)
+            // In production, would need to parse the TLS handshake
+            return ['has_ocsp' => false]; // Conservative default
+        }
+        
+        return ['has_ocsp' => false];
+    }
+    
+    private function checkHstsPreload(string $host): bool
+    {
+        // Check if domain is in HSTS preload list
+        // This would ideally check against the Chromium HSTS preload list
+        // For now, we check if the domain has HSTS with preload directive
+        $headers = @get_headers("https://{$host}", true);
+        if ($headers && isset($headers['Strict-Transport-Security'])) {
+            return str_contains($headers['Strict-Transport-Security'], 'preload');
+        }
+        return false;
+    }
 }
 ```
 
-### Security Headers Scanner (30% Weight)
+### SSL/TLS Grading System
+
+The SSL/TLS Scanner produces an industry-standard grade (A+ to F) separate from the numerical score:
+
+#### SSL Grade Calculation
+```php
+private function calculateSslGrade(int $score, array $details): string
+{
+    // Critical failures result in F grade
+    if ($score === 0 || in_array('Certificate has expired', $details['issues'] ?? [])) {
+        return 'F';
+    }
+    
+    // Check for specific SSL/TLS criteria
+    $hasTls13 = in_array('TLS 1.3 supported', $details['strengths'] ?? []);
+    $hasHsts = in_array('HSTS enabled with long duration', $details['strengths'] ?? []);
+    $hasStrongCiphers = !in_array('Weak cipher suites detected', $details['issues'] ?? []);
+    $hasPerfectForwardSecrecy = in_array('Perfect Forward Secrecy enabled', $details['strengths'] ?? []);
+    
+    // A+ Grade Requirements (95-100 score + all best practices)
+    if ($score >= 95 && $hasTls13 && $hasHsts && $hasStrongCiphers && $hasPerfectForwardSecrecy) {
+        return 'A+';
+    }
+    
+    // Grade based on score and features
+    if ($score >= 90) return 'A';
+    if ($score >= 85) return 'B+';
+    if ($score >= 80) return 'B';
+    if ($score >= 70) return 'C';
+    if ($score >= 60) return 'D';
+    
+    return 'F';
+}
+```
+
+#### SSL Grade Criteria
+
+| Grade | Score Range | Requirements |
+|-------|------------|--------------|
+| **A+** | 95-100 | TLS 1.3, HSTS with preload, strong ciphers only, PFS, valid cert (30+ days) |
+| **A** | 90-94 | TLS 1.2+, HSTS enabled, no weak ciphers, valid cert (7+ days) |
+| **B+** | 85-89 | TLS 1.2+, most security features, minor issues |
+| **B** | 80-84 | TLS 1.2, some weak ciphers, cert valid |
+| **C** | 70-79 | Security issues present, outdated protocols allowed |
+| **D** | 60-69 | Serious issues, cert expiring soon, weak configuration |
+| **F** | 0-59 | Critical failures, expired cert, SSL vulnerabilities |
+
+#### Grade Display
+- SSL Grade is shown separately from the overall security score
+- Displayed prominently in the domain detail view
+- Color-coded: Green (A+/A), Yellow (B+/B), Orange (C), Red (D/F)
+- Includes brief explanation of grade factors
+
+### Security Headers Scanner (20% Weight)
 ```php
 namespace App\Services\Scanners;
 
 class SecurityHeadersScanner extends AbstractScanner
 {
     public function name(): string { return 'security_headers'; }
-    public function getWeight(): int { return 30; }
+    public function getWeight(): int { return 20; }
     protected function getRateLimitPerMinute(): int { return 15; }
     
     protected function performScan(string $url, array $context = []): ModuleResult
@@ -488,36 +828,54 @@ class SecurityHeadersScanner extends AbstractScanner
     {
         $cspHeader = $headers['content-security-policy'] ?? null;
         if (!$cspHeader) {
-            $details['issues'][] = 'Content-Security-Policy header missing';
-            $details['recommendations'][] = 'Add CSP header to prevent XSS attacks';
-            return 60;
+            // No CSP is common, don't penalize heavily
+            $details['recommendations'][] = 'Consider adding Content-Security-Policy header';
+            $details['info'][] = 'CSP helps prevent XSS attacks';
+            return 75; // Increased from 60 - many sites don't have CSP
         }
         
         $score = 100;
         $directives = $this->parseCSPDirectives($cspHeader);
         
-        // Check for unsafe directives
-        $unsafePatterns = ['unsafe-inline', 'unsafe-eval', 'data:', '*'];
+        // More nuanced handling of 'unsafe' directives
+        $hasUnsafeInline = false;
+        $hasUnsafeEval = false;
+        $hasWildcard = false;
+        
         foreach ($directives as $directive => $values) {
-            foreach ($unsafePatterns as $pattern) {
-                if (in_array($pattern, $values)) {
-                    $score -= 15;
-                    $details['issues'][] = "CSP contains unsafe directive: {$directive} {$pattern}";
-                }
+            if (in_array('unsafe-inline', $values)) {
+                $hasUnsafeInline = true;
+            }
+            if (in_array('unsafe-eval', $values)) {
+                $hasUnsafeEval = true;
+            }
+            if (in_array('*', $values) && $directive !== 'img-src') {
+                // Wildcard in img-src is often necessary for user content
+                $hasWildcard = true;
             }
         }
         
-        // Check for essential directives
-        $essential = ['default-src', 'script-src', 'style-src'];
-        foreach ($essential as $dir) {
-            if (!isset($directives[$dir])) {
-                $score -= 5;
-                $details['recommendations'][] = "Add {$dir} directive to CSP";
-            }
+        // Grade CSP based on security level
+        if ($hasWildcard) {
+            $score = 70;
+            $details['recommendations'][] = 'CSP uses wildcards - consider restricting sources';
+        } elseif ($hasUnsafeInline && $hasUnsafeEval) {
+            $score = 75;
+            $details['info'][] = 'CSP allows inline scripts and eval (common for many frameworks)';
+        } elseif ($hasUnsafeInline) {
+            $score = 85;
+            $details['info'][] = 'CSP allows inline scripts (often required for analytics/widgets)';
+        } elseif ($hasUnsafeEval) {
+            $score = 90;
+            $details['info'][] = 'CSP allows eval (some frameworks require this)';
+        } else {
+            $details['strengths'][] = 'Strict CSP configured without unsafe directives';
         }
         
-        if ($score > 80) {
-            $details['strengths'][] = 'CSP properly configured';
+        // Check for report-uri or report-to (bonus points)
+        if (isset($directives['report-uri']) || isset($directives['report-to'])) {
+            $score = min(100, $score + 5);
+            $details['strengths'][] = 'CSP violation reporting configured';
         }
         
         return $score;
@@ -617,35 +975,92 @@ class DnsEmailScanner extends AbstractScanner
         $host = parse_url($url, PHP_URL_HOST);
         $emailMode = $context['email_mode'] ?? 'expected';
         $dkimSelector = $context['dkim_selector'] ?? 'default';
+        $platform = $this->detectPlatform($url);
         
         $score = 100;
-        $details = ['domain' => $host, 'email_mode' => $emailMode, 'issues' => [], 'recommendations' => [], 'strengths' => []];
+        $confidence = 'high';
+        $details = [
+            'domain' => $host, 
+            'email_mode' => $emailMode, 
+            'issues' => [], 
+            'recommendations' => [], 
+            'strengths' => [],
+            'info' => []
+        ];
         
         if ($emailMode === 'none') {
-            // Only check DNSSEC for non-email domains
+            // For non-email domains, start with base score
+            $score = 85; // Start higher since DNS security is optional for many sites
+            
+            // DNSSEC is a bonus, not a requirement
             $dnssecAnalysis = $this->checkDNSSEC($host);
-            $score = $dnssecAnalysis['score'];
-            $details = array_merge($details, $dnssecAnalysis['details']);
+            if ($dnssecAnalysis['enabled']) {
+                $score = min(100, $score + 15); // Bonus for having DNSSEC
+                $details['strengths'][] = 'DNSSEC enabled';
+            } else {
+                $details['info'][] = 'DNSSEC not enabled (optional security feature)';
+            }
+            
+            // CAA records - bonus points
+            $caaAnalysis = $this->checkCAA($host);
+            if ($caaAnalysis['has_caa']) {
+                $score = min(100, $score + 5);
+                $details['strengths'][] = 'CAA records configured';
+            }
         } else {
-            // Full email security analysis with weighted scoring
+            // Email security analysis - more forgiving
+            $emailScore = 0;
+            $maxEmailScore = 100;
+            
+            // SPF (35% weight)
             $spfAnalysis = $this->checkSPF($host);
-            $score -= (30 - ($spfAnalysis['score'] * 0.3)); // 30% weight
+            $emailScore += $spfAnalysis['score'] * 0.35;
             $details = array_merge_recursive($details, $spfAnalysis['details']);
             
+            // DKIM (30% weight) - but forgiving if selector not found
             $dkimAnalysis = $this->checkDKIM($host, $dkimSelector);
-            $score -= (25 - ($dkimAnalysis['score'] * 0.25)); // 25% weight
-            $details = array_merge_recursive($details, $dkimAnalysis['details']);
+            if ($dkimAnalysis['score'] === 0 && $dkimSelector === 'default') {
+                // Couldn't find DKIM with default selectors, be lenient
+                $details['info'][] = 'DKIM not detected (may use custom selector)';
+                $confidence = 'medium';
+                $emailScore += 15; // Give some points for uncertainty
+            } else {
+                $emailScore += $dkimAnalysis['score'] * 0.30;
+                $details = array_merge_recursive($details, $dkimAnalysis['details']);
+            }
             
+            // DMARC (25% weight)
             $dmarcAnalysis = $this->checkDMARC($host);
-            $score -= (25 - ($dmarcAnalysis['score'] * 0.25)); // 25% weight
+            $emailScore += $dmarcAnalysis['score'] * 0.25;
             $details = array_merge_recursive($details, $dmarcAnalysis['details']);
             
-            $dnssecAnalysis = $this->checkDNSSEC($host);
-            $score -= (20 - ($dnssecAnalysis['score'] * 0.20)); // 20% weight
-            $details = array_merge_recursive($details, $dnssecAnalysis['details']);
+            // MTA-STS (10% weight) - bonus feature
+            $mtaStsAnalysis = $this->checkMtaSts($host);
+            if ($mtaStsAnalysis['has_mta_sts']) {
+                $emailScore += 10;
+                $details['strengths'][] = 'MTA-STS configured for email transport security';
+            }
+            
+            $score = round($emailScore);
         }
         
-        return new ModuleResult($this->name(), max(0, min(100, $score)), $this->determineStatus($score), $details);
+        // Platform-specific adjustments
+        if ($platform === 'github-pages') {
+            $details['info'][] = 'GitHub Pages handles some DNS security features';
+            $confidence = 'medium';
+        }
+        
+        return new ModuleResult(
+            $this->name(), 
+            max(0, min(100, $score)), 
+            $this->determineStatus($score), 
+            $details,
+            null,
+            0,
+            0,
+            $confidence,
+            $platform
+        );
     }
     
     private function checkSPF(string $domain): array
@@ -698,7 +1113,13 @@ class DnsEmailScanner extends AbstractScanner
     {
         $selectors = [$selector];
         if ($selector === 'default') {
-            $selectors = ['default', 'google', 'k1', 'k2', 'mandrill', 'mailgun', 'sendgrid'];
+            // Expanded list of common selectors
+            $selectors = [
+                'default', 'google', 'k1', 'k2', 's1', 's2', 
+                'mandrill', 'mailgun', 'sendgrid', 'amazonses',
+                'mail', 'smtp', 'dkim', 'email', 'selector1', 'selector2',
+                '2024', '2023', '2022' // Year-based selectors
+            ];
         }
         
         foreach ($selectors as $trySelector) {
@@ -708,36 +1129,64 @@ class DnsEmailScanner extends AbstractScanner
             if ($dkimRecords) {
                 foreach ($dkimRecords as $record) {
                     if (str_contains($record['txt'] ?? '', 'p=')) {
-                        $score = 70; // Base score
+                        // Found DKIM key
+                        $details = [
+                            'dkim' => ['found' => true, 'selector' => $trySelector],
+                            'strengths' => []
+                        ];
                         
-                        // Check key strength
+                        // Validate key strength
                         if (preg_match('/p=([^;]+)/', $record['txt'], $matches)) {
-                            $publicKey = $matches[1];
-                            if (strlen($publicKey) > 200) {
-                                $score += 30;
-                            } else {
-                                $score += 20;
+                            $publicKey = trim($matches[1]);
+                            
+                            if (empty($publicKey) || $publicKey === '') {
+                                // Revoked key
+                                return [
+                                    'score' => 0,
+                                    'details' => array_merge($details, [
+                                        'issues' => ['DKIM key revoked (empty public key)']
+                                    ])
+                                ];
                             }
+                            
+                            // Estimate key size (rough approximation)
+                            $keyBits = strlen(base64_decode($publicKey)) * 8;
+                            
+                            if ($keyBits >= 2048) {
+                                $score = 100;
+                                $details['strengths'][] = 'DKIM configured with strong 2048-bit+ key';
+                            } elseif ($keyBits >= 1024) {
+                                $score = 85;
+                                $details['strengths'][] = 'DKIM configured with 1024-bit key';
+                                $details['recommendations'] = ['Consider upgrading to 2048-bit DKIM key'];
+                            } else {
+                                $score = 70;
+                                $details['strengths'][] = 'DKIM configured';
+                                $details['recommendations'] = ['DKIM key appears weak, consider upgrading'];
+                            }
+                            
+                            return ['score' => $score, 'details' => $details];
                         }
                         
+                        // Has DKIM but couldn't parse key
                         return [
-                            'score' => $score,
-                            'details' => [
-                                'dkim' => ['found' => true, 'selector' => $trySelector, 'record' => $record['txt']],
-                                'strengths' => ['DKIM configured']
-                            ]
+                            'score' => 75,
+                            'details' => array_merge($details, [
+                                'strengths' => ['DKIM record found']
+                            ])
                         ];
                     }
                 }
             }
         }
         
+        // No DKIM found - not necessarily bad
         return [
             'score' => 0,
             'details' => [
                 'dkim' => ['found' => false],
-                'issues' => ['No DKIM record found'],
-                'recommendations' => ['Configure DKIM to authenticate email sender']
+                'info' => ['DKIM not detected - may use custom selector'],
+                'recommendations' => ['Consider configuring DKIM for email authentication']
             ]
         ];
     }
@@ -789,21 +1238,72 @@ class DnsEmailScanner extends AbstractScanner
     
     private function checkDNSSEC(string $domain): array
     {
-        // Simplified DNSSEC check - in production, use proper DNS resolver
-        $score = 60; // Default score for non-DNSSEC domains
-        $details = ['dnssec' => ['enabled' => false]];
-        
-        // Check for CAA records
-        $caaRecords = @dns_get_record($domain, DNS_CAA);
-        if ($caaRecords && count($caaRecords) > 0) {
-            $score = min(100, $score + 10);
-            $details['caa'] = ['found' => true];
-            $details['strengths'][] = 'CAA records configured';
-        } else {
-            $details['recommendations'][] = 'Add CAA records to control certificate issuance';
+        // DNSSEC is optional - return enabled/disabled status without heavy penalties
+        try {
+            // Try to get DNSKEY records (indicates DNSSEC)
+            $dnskeyRecords = @dns_get_record($domain, DNS_DNSKEY);
+            
+            if ($dnskeyRecords && count($dnskeyRecords) > 0) {
+                return ['enabled' => true];
+            }
+            
+            // Fallback: Check for DS records at parent
+            $parts = explode('.', $domain);
+            if (count($parts) >= 2) {
+                $parent = implode('.', array_slice($parts, 1));
+                $dsRecords = @dns_get_record("_ds.{$domain}", DNS_DS);
+                if ($dsRecords && count($dsRecords) > 0) {
+                    return ['enabled' => true];
+                }
+            }
+        } catch (\Exception $e) {
+            // DNS query failed, assume not enabled
         }
         
-        return ['score' => $score, 'details' => $details];
+        return ['enabled' => false];
+    }
+    
+    private function checkCAA(string $domain): array
+    {
+        try {
+            $caaRecords = @dns_get_record($domain, DNS_CAA);
+            if ($caaRecords && count($caaRecords) > 0) {
+                return ['has_caa' => true, 'records' => $caaRecords];
+            }
+        } catch (\Exception $e) {
+            // CAA check failed
+        }
+        
+        return ['has_caa' => false];
+    }
+    
+    private function checkMtaSts(string $domain): array
+    {
+        // Check for MTA-STS policy
+        try {
+            // Check for _mta-sts TXT record
+            $mtsRecords = @dns_get_record("_mta-sts.{$domain}", DNS_TXT);
+            if ($mtsRecords) {
+                foreach ($mtsRecords as $record) {
+                    if (str_contains($record['txt'] ?? '', 'v=STSv1')) {
+                        // Also check if policy file is accessible
+                        $policyUrl = "https://mta-sts.{$domain}/.well-known/mta-sts.txt";
+                        $context = stream_context_create([
+                            'http' => ['timeout' => 5, 'user_agent' => 'Achilleus/1.0']
+                        ]);
+                        
+                        $policy = @file_get_contents($policyUrl, false, $context);
+                        if ($policy && str_contains($policy, 'version: STSv1')) {
+                            return ['has_mta_sts' => true];
+                        }
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            // MTA-STS check failed
+        }
+        
+        return ['has_mta_sts' => false];
     }
     
     private function determineStatus(int $score): string
@@ -816,6 +1316,97 @@ class DnsEmailScanner extends AbstractScanner
     }
 }
 ```
+
+## Scanner Failure Handling & Weight Redistribution
+
+### How Scanner Failures Are Handled
+
+When a scanner fails (returns error or timeout status), the system automatically redistributes its weight proportionally among the successful scanners to ensure the final score remains on a 0-100 scale.
+
+### Weight Redistribution Examples
+
+#### Example 1: SSL Scanner Fails (50% weight)
+```
+Original Weights:
+- SSL/TLS: 50% (FAILED)
+- Security Headers: 20% 
+- DNS/Email: 30%
+
+Redistributed Weights:
+- SSL/TLS: 0% (excluded from scoring)
+- Security Headers: 40% (20/50 * 100)
+- DNS/Email: 60% (30/50 * 100)
+
+Calculation:
+- Total successful weight: 20% + 30% = 50%
+- Security Headers new weight: 20% / 50% = 40%
+- DNS/Email new weight: 30% / 50% = 60%
+```
+
+#### Example 2: DNS/Email Scanner Fails (30% weight)
+```
+Original Weights:
+- SSL/TLS: 50%
+- Security Headers: 20%
+- DNS/Email: 30% (FAILED)
+
+Redistributed Weights:
+- SSL/TLS: 71.4% (50/70 * 100)
+- Security Headers: 28.6% (20/70 * 100)
+- DNS/Email: 0% (excluded from scoring)
+
+Calculation:
+- Total successful weight: 50% + 20% = 70%
+- SSL/TLS new weight: 50% / 70% = 71.4%
+- Security Headers new weight: 20% / 70% = 28.6%
+```
+
+#### Example 3: Multiple Scanner Failures
+```
+Original Weights:
+- SSL/TLS: 50%
+- Security Headers: 20% (FAILED)
+- DNS/Email: 30% (FAILED)
+
+Redistributed Weights:
+- SSL/TLS: 100% (only successful scanner)
+- Security Headers: 0% (excluded)
+- DNS/Email: 0% (excluded)
+
+Result: SSL/TLS score becomes the total score
+```
+
+### Confidence Level Adjustments
+
+When scanners succeed but with uncertainty, confidence levels affect scoring:
+
+- **High Confidence**: 100% of scanner score is used
+- **Medium Confidence**: 95% of scanner score is used (5% penalty)
+- **Low Confidence**: 90% of scanner score is used (10% penalty)
+
+Example with confidence adjustments:
+```
+Scanner Results:
+- SSL/TLS: 90 points, high confidence (weight: 50%)
+- Headers: 80 points, medium confidence (weight: 20%)
+- DNS/Email: 70 points, low confidence (weight: 30%)
+
+Calculation:
+- SSL/TLS contribution: 90 * 0.5 * 1.0 = 45.0
+- Headers contribution: 80 * 0.2 * 0.95 = 15.2
+- DNS/Email contribution: 70 * 0.3 * 0.9 = 18.9
+- Total Score: 45.0 + 15.2 + 18.9 = 79.1 → 79
+```
+
+### Platform-Specific Adjustments
+
+Some platforms handle security features automatically, which affects scoring:
+
+- **Cloudflare**: Manages TLS versions, may show legacy protocols
+- **GitHub Pages**: Handles DNS security features
+- **Vercel/Netlify**: May have platform-specific security headers
+
+When a platform is detected, the scanner adjusts expectations and may reduce penalties for certain configurations that are managed by the platform.
 
 ## Scan Orchestration & Scoring
 
@@ -877,7 +1468,31 @@ class ScanOrchestrator
             'dkim_selector' => $domain->dkim_selector ?? 'default',
         ];
         
+        $totalScanners = $this->scanners->count();
+        $currentScanner = 0;
+        
+        // Broadcast initial progress
+        broadcast(new ScanProgressEvent(
+            $scan,
+            0,
+            'Initializing scan',
+            30,
+            'in_progress'
+        ))->toOthers();
+        
         foreach ($this->scanners as $scanner) {
+            $currentScanner++;
+            $progressPercent = (int)(($currentScanner - 1) / $totalScanners * 100);
+            
+            // Broadcast progress for current module
+            broadcast(new ScanProgressEvent(
+                $scan,
+                $progressPercent + (int)(33 / $totalScanners), // Partial progress
+                $scanner->getDisplayName(),
+                (int)((30 / $totalScanners) * ($totalScanners - $currentScanner)),
+                'in_progress'
+            ))->toOthers();
+            
             try {
                 $result = $scanner->scan($url, $context);
                 $results->push($result);
@@ -887,6 +1502,15 @@ class ScanOrchestrator
             }
         }
         
+        // Broadcast completion
+        broadcast(new ScanProgressEvent(
+            $scan,
+            100,
+            'Scan completed',
+            0,
+            'completed'
+        ))->toOthers();
+        
         return $results;
     }
     
@@ -895,26 +1519,53 @@ class ScanOrchestrator
         $weights = $this->getWeights();
         $totalWeight = 0;
         $weightedScore = 0;
+        $adjustedWeights = [];
         
+        // First pass: determine which scanners succeeded
         foreach ($results as $result) {
             $weight = $weights[$result->module] ?? 0;
             
             // Only count successful scans for weight redistribution
             if (!in_array($result->status, ['error', 'timeout'])) {
+                $adjustedWeights[$result->module] = $weight;
                 $totalWeight += $weight;
-                $weightedScore += $result->score * $weight;
             }
         }
         
-        return $totalWeight > 0 ? (int) round($weightedScore / $totalWeight) : 0;
+        // Redistribute weights if any scanner failed
+        if ($totalWeight < 1.0 && $totalWeight > 0) {
+            foreach ($adjustedWeights as $module => &$weight) {
+                $weight = $weight / $totalWeight; // Normalize to 100%
+            }
+        }
+        
+        // Second pass: calculate weighted score
+        foreach ($results as $result) {
+            if (isset($adjustedWeights[$result->module])) {
+                $weight = $adjustedWeights[$result->module];
+                
+                // Apply confidence adjustment
+                $confidenceMultiplier = match($result->confidence) {
+                    'high' => 1.0,
+                    'medium' => 0.95, // Slight reduction for uncertainty
+                    'low' => 0.9,     // More reduction for low confidence
+                    default => 1.0
+                };
+                
+                $weightedScore += ($result->score * $weight * $confidenceMultiplier);
+            }
+        }
+        
+        return (int) round($weightedScore);
     }
     
     private function getWeights(): array
     {
+        // Adjusted weights to be more forgiving
         return [
-            'ssl_tls' => 0.4,        // 40% weight
-            'security_headers' => 0.3, // 30% weight
-            'dns_email' => 0.3,      // 30% weight
+            'ssl_tls' => 0.5,        // 50% weight - SSL is critical
+            'security_headers' => 0.2, // 20% weight - Headers vary widely
+            'dns_email' => 0.3,      // 30% weight - Important but optional features
         ];
     }
     
@@ -1233,7 +1884,7 @@ class SendExpiryWarnings extends Command
 
 **Reference**: https://laravel.com/docs/12.x/reverb
 
-### Real-time Scan Progress
+### Real-time Scan Progress with Shadcn Progress Component
 ```php
 namespace App\Events;
 
@@ -1251,7 +1902,8 @@ class ScanProgressEvent implements ShouldBroadcast
         public Scan $scan,
         public int $progressPercent,
         public string $currentModule,
-        public int $etaSeconds
+        public int $etaSeconds,
+        public string $status = 'in_progress' // 'in_progress', 'completed', 'failed'
     ) {}
     
     public function broadcastOn(): array
@@ -1279,9 +1931,9 @@ class ScanProgressEvent implements ShouldBroadcast
 }
 ```
 
-### React WebSocket Hook
+### React WebSocket Hook with Shadcn Progress Component
 ```tsx
-// resources/js/hooks/useScanProgress.ts
+// resources/js/hooks/useReverbChannel.ts
 import { useEffect, useState } from 'react'
 import Echo from 'laravel-echo'
 
@@ -1291,51 +1943,141 @@ interface ScanProgress {
   progressPercent: number
   currentModule: string
   etaSeconds: number
+  status: 'in_progress' | 'completed' | 'failed'
 }
 
-export function useScanProgress(userId: string) {
-  const [scanProgress, setScanProgress] = useState<Map<string, ScanProgress>>(new Map())
-  
+export function useReverbChannel(channelName: string, callbacks: {
+  onProgress?: (data: any) => void
+  onComplete?: (data: any) => void
+  onError?: (data: any) => void
+}) {
   useEffect(() => {
-    const channel = Echo.private(`user.${userId}.scans`)
+    const channel = Echo.private(channelName)
     
-    channel.listen('.scan.started', (data: any) => {
-      setScanProgress(prev => new Map(prev.set(data.scan_id, {
-        scanId: data.scan_id,
-        domainId: data.domain_id,
-        progressPercent: 0,
-        currentModule: 'Initializing',
-        etaSeconds: 30,
-      })))
-    })
+    if (callbacks.onProgress) {
+      channel.listen('.scan.progress', callbacks.onProgress)
+    }
     
-    channel.listen('.scan.progress', (data: any) => {
-      setScanProgress(prev => new Map(prev.set(data.scan_id, {
-        scanId: data.scan_id,
-        domainId: data.domain_id,
-        progressPercent: data.progress_percent,
-        currentModule: data.current_module,
-        etaSeconds: data.eta_seconds,
-      })))
-    })
+    if (callbacks.onComplete) {
+      channel.listen('.scan.completed', callbacks.onComplete)
+    }
     
-    channel.listen('.scan.completed', (data: any) => {
-      setScanProgress(prev => {
-        const next = new Map(prev)
-        next.delete(data.scan_id)
-        return next
-      })
-    })
+    if (callbacks.onError) {
+      channel.listen('.scan.failed', callbacks.onError)
+    }
     
     return () => {
-      channel.stopListening('.scan.started')
-      channel.stopListening('.scan.progress')
-      channel.stopListening('.scan.completed')
+      Echo.leave(channelName)
     }
-  }, [userId])
-  
-  return scanProgress
+  }, [channelName])
 }
+
+// Usage with Shadcn Progress component
+export function useScanProgress(scanId: string) {
+  const [progress, setProgress] = useState(0)
+  const [module, setModule] = useState('Initializing...')
+  const [status, setStatus] = useState<'in_progress' | 'completed' | 'failed'>('in_progress')
+  
+  useReverbChannel(`scan.${scanId}`, {
+    onProgress: (data) => {
+      setProgress(data.progress_percent)
+      setModule(data.current_module)
+      setStatus(data.status)
+    },
+    onComplete: (data) => {
+      setProgress(100)
+      setStatus('completed')
+    },
+    onError: (data) => {
+      setStatus('failed')
+    }
+  })
+  
+  return { progress, module, status }
+}
+
+// Component usage example
+import { Progress } from "@/components/ui/progress"
+
+export function ScanProgressCard({ scanId }: { scanId: string }) {
+  const { progress, module, status } = useScanProgress(scanId)
+  
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Scanning in progress</CardTitle>
+        <CardDescription>{module}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Progress 
+          value={progress} 
+          className={cn(
+            "w-full",
+            status === 'completed' && "bg-green-500/20",
+            status === 'failed' && "bg-red-500/20"
+          )}
+        />
+        <p className="text-sm text-muted-foreground mt-2">
+          {progress}% complete
+        </p>
+      </CardContent>
+    </Card>
+  )
+}
+```
+
+### Backend Reverb Configuration
+```php
+// config/reverb.php
+return [
+    'apps' => [
+        [
+            'id' => env('REVERB_APP_ID', 'achilleus'),
+            'key' => env('REVERB_APP_KEY'),
+            'secret' => env('REVERB_APP_SECRET'),
+            'max_connections' => 1000,
+            'allowed_origins' => ['https://achilleus.so'],
+        ]
+    ],
+    'scaling' => [
+        'enabled' => true,
+        'channel' => env('REVERB_SCALING_CHANNEL', 'redis'),
+    ],
+];
+
+// Broadcasting scan progress in Job
+class RunDomainScan implements ShouldQueue
+{
+    public function handle(): void
+    {
+        // ... scan logic ...
+        
+        // Broadcast progress updates
+        broadcast(new ScanProgressEvent(
+            $this->scan,
+            33,
+            'SSL/TLS Certificate',
+            20,
+            'in_progress'
+        ));
+        
+        // ... more scan logic ...
+    }
+}
+```
+
+### Reverb Channel Authorization
+```php
+// routes/channels.php
+Broadcast::channel('scan.{scanId}', function ($user, $scanId) {
+    $scan = Scan::find($scanId);
+    return $scan && $user->id === $scan->user_id;
+});
+
+Broadcast::channel('user.{userId}.scans', function ($user, $userId) {
+    return (int) $user->id === (int) $userId;
+});
+```
 ```
 
 ---

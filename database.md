@@ -119,6 +119,8 @@ CREATE TABLE scan_modules (
     module VARCHAR(20) NOT NULL CHECK (module IN ('ssl_tls', 'security_headers', 'dns_email')),
     score INTEGER CHECK (score >= 0 AND score <= 100),
     status VARCHAR(10) NOT NULL CHECK (status IN ('ok', 'warn', 'fail', 'error')),
+    confidence VARCHAR(10) DEFAULT 'high' CHECK (confidence IN ('high', 'medium', 'low')),
+    platform VARCHAR(50), -- detected platform (cloudflare, github-pages, etc)
     raw JSONB NOT NULL DEFAULT '{}',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

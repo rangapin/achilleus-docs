@@ -1,7 +1,7 @@
 # Achilleus Testing Strategy
 
 **Version**: 1.0  
-**Test Target**: 365 tests maximum  
+**Test Target**: 280 tests maximum  
 **Coverage Goal**: 80% on business logic  
 **Execution Time**: <30 seconds with parallel testing
 
@@ -12,7 +12,7 @@
 ### Core Principles
 1. **Test Business Rules, Not Framework**: Laravel is already tested
 2. **Mock External Services**: Never hit real APIs in tests
-3. **Quality Over Quantity**: 365 solid tests > 500 fragile tests
+3. **Quality Over Quantity**: 290 solid tests > 500 fragile tests
 4. **Fast Feedback Loop**: Tests must run quickly
 5. **Pragmatic Coverage**: 80% is enough, 100% has diminishing returns
 
@@ -34,32 +34,25 @@
 
 ---
 
-## Test Distribution (365 Total)
+## Test Distribution (280 Total)
 
 ### Phase-by-Phase Allocation
 
 | Phase | Focus | Tests | Description |
 |-------|-------|-------|-------------|
-| Phase 1 | Project Setup & Auth | 20 | Registration, login, middleware |
-| Phase 2 | Database & Models | 30 | Business logic, relationships |
-| Phase 3 | Security Infrastructure | 25 | SSRF, NetworkGuard, AbstractScanner |
-| Phase 4 | SSL/TLS Scanner | 30 | Certificate analysis, validation |
-| Phase 5 | Security Headers Scanner | 25 | HTTP headers, CSP, HSTS |
-| Phase 6 | DNS/Email Scanner | 30 | SPF, DKIM, DMARC, DNSSEC |
-| Phase 7 | Scan Orchestration | 30 | Job queue, weighted scoring |
-| Phase 8 | Core UI | 30 | Dashboard, domain list |
-| Phase 9 | Domain Detail | 25 | Scan results, configuration |
-| Phase 10 | Settings & Profile | 25 | User management, activity |
-| Phase 10.5 | Email Notifications | 15 | Certificate/trial expiry warnings |
-| Phase 11 | Report Generation | 25 | PDF creation, S3 storage |
-| Phase 12 | OAuth & Social Login | 15 | Google OAuth integration |
-| Phase 13 | Payment & Billing | 30 | Stripe, subscriptions |
-| Phase 14 | Landing Page | 15 | Marketing site, SEO |
-| Phase 15 | Production Polish | 20 | Deployment, monitoring |
+| Phase 1 | Models | 30 | Business logic, relationships |
+| Phase 2 | Scanners | 45 | Security, scoring, validation |
+| Phase 3 | Jobs | 25 | Async processing, queues |
+| Phase 4 | APIs | 50 | Endpoints, validation, auth |
+| Phase 5 | Auth | 30 | Login, registration, trials |
+| Phase 6 | Billing | 40 | Payments, subscriptions |
+| Phase 7 | Frontend | 30 | Components, forms |
+| Phase 8 | Real-time | 20 | WebSockets, updates |
+| Phase 9 | E2E | 20 | Complete user journeys |
 
 ### Test Type Breakdown
-- **Unit Tests**: 120 (isolated business logic)
-- **Feature Tests**: 195 (API and integration)
+- **Unit Tests**: 100 (isolated business logic)
+- **Feature Tests**: 150 (API and integration)
 - **Browser Tests**: 50 (critical E2E paths)
 
 ---
@@ -537,11 +530,11 @@ public function scanned(): static
 ### ❌ Don't Test External APIs
 ```php
 // BAD - Slow, flaky, rate-limited
-$result = $scanner->scan('https://example.com');
+$result = $scanner->scan('https://github.com');
 
 // GOOD - Fast, reliable, controlled
-Http::fake(['example.com' => Http::response([...])]);
-$result = $scanner->scan('https://example.com');
+Http::fake(['github.com' => Http::response([...])]);
+$result = $scanner->scan('https://github.com');
 ```
 
 ### ❌ Don't Over-Test Simple Methods
@@ -584,6 +577,8 @@ test('user can add domain', function () {
 ---
 
 ## CI/CD Integration
+
+### GitHub Actions Configuration
 ```yaml
 name: Tests
 on: [push, pull_request]
@@ -627,4 +622,4 @@ This testing strategy ensures:
 - **Maintainable tests** that don't break with minor changes
 - **Clear boundaries** on what to test and what to skip
 
-Remember: **365 quality tests** that run in 30 seconds are infinitely better than 500 flaky tests that take 10 minutes. Focus on business value, not coverage percentage.
+Remember: **290 quality tests** that run in 30 seconds are infinitely better than 500 flaky tests that take 10 minutes. Focus on business value, not coverage percentage.

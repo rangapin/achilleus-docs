@@ -13,15 +13,15 @@
 Based on the Laravel React starter template screenshot, the layout consists of:
 
 ### Sidebar (256px width)
-- **Logo area**: "Laravel Starter Kit" branding at top
+- **Logo area**: "Achilleus" branding at top (using 'Instrument Sans' font)
 - **Navigation menu**: Clean list-style navigation items
 - **Profile section**: Bottom-positioned dropdown with avatar, user name, and menu
 - **Collapsible toggle**: Hamburger icon in exact same position for sidebar collapse
 
 ### Main Content Area
 - **Header**: Page title with optional action buttons on the right
-- **4-card grid**: Perfectly spaced card layout (2x2 on desktop)
-- **Chart area**: Full-width section below cards for data visualization
+- **3-card grid**: Perfectly spaced card layout (3 cards in single row on desktop)
+- **Chart area**: Full-width interactive bar chart below cards
 - **Consistent spacing**: Proper margins and padding throughout
 
 ### Visual Design Elements
@@ -34,33 +34,79 @@ Based on the Laravel React starter template screenshot, the layout consists of:
 
 ## Color System
 
-### Core Palette (From Template)
-- **Background**: `#09090b` (neutral-950) - Main background
-- **Card Background**: `#171717` (neutral-900) - Elevated surfaces  
-- **Border**: `#262626` (neutral-800) - Dividers and card borders
-- **Muted Background**: `#262626` (neutral-800) - Subtle backgrounds
-- **Hover State**: `#404040` (neutral-700) - Interactive hover effects
+### Core Palette (Green Theme - HSL Color Space)
+Light Mode:
+```css
+--background: 0 0% 100%;              /* White background */
+--foreground: 240 10% 3.9%;           /* Dark text */
+--card: 0 0% 100%;                     /* Card background */
+--card-foreground: 240 10% 3.9%;       /* Card text */
+--popover: 0 0% 100%;                  /* Popover background */
+--popover-foreground: 240 10% 3.9%;    /* Popover text */
+--primary: 142 70% 45%;                /* Green primary */
+--primary-foreground: 0 0% 98%;        /* White on green */
+--secondary: 142 30% 95%;              /* Light green */
+--secondary-foreground: 142 70% 25%;   /* Dark green text */
+--muted: 142 10% 96%;                  /* Very light green */
+--muted-foreground: 240 4.8% 45.9%;    /* Muted text */
+--accent: 142 50% 90%;                 /* Light green accent */
+--accent-foreground: 142 70% 30%;      /* Dark green accent text */
+--destructive: 0 84.2% 60.2%;          /* Red for errors */
+--destructive-foreground: 0 0% 98%;    /* White on red */
+--border: 142 20% 90%;                 /* Light green borders */
+--input: 142 20% 90%;                  /* Light green inputs */
+--ring: 142 70% 45%;                   /* Green focus ring */
+--radius: 0.5rem;                      /* Border radius */
+```
 
-### Text Colors (From Template)
-- **Primary**: `#ffffff` - Main content and headings
-- **Secondary**: `#a0a0a0` - Supporting text and descriptions
-- **Muted**: `#6b7280` - Disabled states and placeholders
-- **Accent**: `#3b82f6` - Links and primary actions
+Dark Mode:
+```css
+--background: 240 10% 3.9%;            /* Dark background */
+--foreground: 0 0% 98%;                /* Light text */
+--card: 240 10% 3.9%;                  /* Dark card */
+--card-foreground: 0 0% 98%;           /* Light card text */
+--popover: 240 10% 3.9%;               /* Dark popover */
+--popover-foreground: 0 0% 98%;        /* Light popover text */
+--primary: 142 70% 50%;                /* Bright green primary */
+--primary-foreground: 142 10% 10%;     /* Dark text on green */
+--secondary: 142 30% 15%;              /* Dark green secondary */
+--secondary-foreground: 142 60% 70%;   /* Light green text */
+--muted: 142 20% 15%;                  /* Dark muted green */
+--muted-foreground: 240 5% 64.9%;      /* Muted light text */
+--accent: 142 40% 20%;                 /* Dark green accent */
+--accent-foreground: 142 60% 70%;      /* Light green accent text */
+--destructive: 0 63% 31%;              /* Dark red for errors */
+--destructive-foreground: 0 0% 98%;    /* White on dark red */
+--border: 142 30% 18%;                 /* Dark green borders */
+--input: 142 30% 18%;                  /* Dark green inputs */
+--ring: 142 70% 50%;                   /* Bright green focus ring */
+```
+
+### Chart Colors (Green Theme)
+```css
+--chart-1: 142 70% 45%;  /* Primary green */
+--chart-2: 142 50% 55%;  /* Medium green */
+--chart-3: 142 30% 65%;  /* Light green */
+--chart-4: 142 60% 35%;  /* Dark green */
+--chart-5: 142 40% 75%;  /* Very light green */
+```
 
 ### Security-Specific Status Colors
-- **Success**: `#22c55e` - Scores 80+, positive states, A/B+ grades
-- **Warning**: `#f59e0b` - Scores 60-79, caution states, C/D grades  
-- **Danger**: `#ef4444` - Scores <60, critical issues, F grade
-- **Info**: `#3b82f6` - Informational states, scanning progress
+- **Success/A+**: `hsl(142 70% 45%)` - Primary green for excellent scores (95+)
+- **Good/A-B+**: `hsl(142 50% 55%)` - Medium green for good scores (80-94)
+- **Warning/B-C**: `hsl(47 80% 50%)` - Yellow for average scores (70-79)
+- **Caution/D**: `hsl(25 80% 50%)` - Orange for poor scores (60-69)
+- **Danger/F**: `hsl(0 84% 60%)` - Red for failing scores (<60)
+- **Info**: `hsl(142 40% 60%)` - Light green for informational states
 
-### Grade-Specific Colors
-- **A+ Grade**: `#22c55e` (bright green)
-- **A Grade**: `#34d399` (green)
-- **B+ Grade**: `#fbbf24` (yellow)
-- **B Grade**: `#f59e0b` (orange)
-- **C Grade**: `#fb923c` (light orange)
-- **D Grade**: `#f87171` (light red)
-- **F Grade**: `#ef4444` (red)
+### Grade-Specific Colors (Aligned with Green Theme)
+- **A+ Grade**: `hsl(142 70% 45%)` - Primary green
+- **A Grade**: `hsl(142 60% 50%)` - Strong green
+- **B+ Grade**: `hsl(142 40% 55%)` - Medium green
+- **B Grade**: `hsl(90 50% 50%)` - Yellow-green
+- **C Grade**: `hsl(47 80% 50%)` - Yellow
+- **D Grade**: `hsl(25 80% 50%)` - Orange
+- **F Grade**: `hsl(0 84% 60%)` - Red
 
 ---
 
@@ -68,8 +114,9 @@ Based on the Laravel React starter template screenshot, the layout consists of:
 
 ### Font Stack (From Template)
 ```css
-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', 
-             'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+font-family: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
+             'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+             'Noto Color Emoji';
 ```
 
 ### Font Sizes (From Template)
@@ -93,64 +140,74 @@ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter',
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ Sidebar (256px)    │  Main Content Area                         │
+│ Sidebar (256px)    │ Collapse Icon Main Content Area                         
 │ ┌────────────────┐ │                                            │
-│ │ Laravel Starter│ │  Dashboard                    [Scan Now]   │
-│ │ Kit            │ │                                            │
+│ │   Achilleus    │ │  Dashboard                    [Scan All]  │
 │ └────────────────┘ │                                            │
-│  📊 Dashboard      │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
-│  🌐 Domains        │  │  Score   │ │ Domains  │ │Last Scan │ │ Issues   │
-│  📈 Activity       │  │   85     │ │   3/10   │ │ 2hr ago  │ │    0     │
-│  📄 Reports        │  │  B+      │ │  Active  │ │example.com│ │  None    │
-│                    │  └──────────┘ └──────────┘ └──────────┘ └──────────┘
-│  ─────────────     │                                            │
-│                    │  Security Score Trend                      │
-│  ┌──────────────┐  │  ┌─────────────────────────────────────┐   │
-│  │👤 User Name  ▼│  │  │ [7d] [30d] [90d] [1y]              │   │
-│  └──────────────┘  │  │                                     │   │
-│                    │  │ ████████████████████████████████    │   │
-│                    │  │ Chart showing score over time       │   │
-│                    │  │                                     │   │
+│  Dashboard         │                                            │
+│  Domains           │  ┌────────────┐ ┌────────────┐ ┌────────────┐
+│  Activity          │  │Security    │ │Your        │ │Critical    │
+│  Reports           │  │Score       │ │Domains     │ │Issues      │
+│                    │  │    85      │ │   3/10     │ │     0      │
+│                    │  │  Grade B+  │ │  3 used    │ │   None     │
+│                    │  └────────────┘ └────────────┘ └────────────┘
+│                                                               │
+│                    │                                            │
+│                     │  Security Score Trend - Last 30 Days      │
+│                    │  ┌─────────────────────────────────────┐   │
+│  ┌──────────────┐  │  │  [All Domains] [Domain 1] [Domain 2]│   │
+│  │👤 User Name  ▼│  │  │                                     │   │
+│  └──────────────┘  │  │  ███ ███ ███ ███ ███ ███ ███ ███   │   │
+│                    │  │  Interactive bar chart with toggle  │   │
+│                    │  │  Total Score: 2,550                 │   │
 │                    │  └─────────────────────────────────────┘   │
 └────────────────────┴─────────────────────────────────────────────┘
 ```
 
 ### Sidebar Navigation Items
 Replace template navigation with security-focused items:
-- **📊 Dashboard** - Main overview page
-- **🌐 Domains** - Domain management and list
-- **📈 Activity** - Recent scans and history
-- **📄 Reports** - Generated PDF reports
+- **Dashboard** - Main overview page
+- **Domains** - Domain management and list
+- **Activity** - Recent scans and history
+- **Reports** - Generated PDF reports
 
-### Dashboard Cards Content
+### Dashboard Cards Content (3 Cards Layout)
 Replace template card content with security metrics:
 
 #### Security Score Card
-- **Large number**: Security score (85)
+- **Large number**: Average security score (85)
 - **Grade indicator**: Letter grade (B+)
 - **Color coding**: Green/yellow/red based on score
+- **Trend indicator**: ↑ or ↓ from last period
 
-#### Active Domains Card  
-- **Usage count**: Active domains (3/10)
-- **Status**: "Active" or similar
-- **Progress indicator**: Visual representation of limit usage
-
-#### Last Scan Date Card
-- **Timestamp**: "2 hours ago"
-- **Domain name**: "example.com"
-- **Status**: Completion indicator
+#### Your Domains Card  
+- **Usage count**: Total domains (3/10)
+- **Limit indicator**: "3 of 10 domains used"
+- **Progress bar**: Visual representation of limit usage
+- **Quick stats**: Last scan time across all domains
 
 #### Critical Issues Card
-- **Count**: Critical issues (0)
-- **Status**: "None" or issue description
-- **Alert level**: Color coding for severity
+- **Count**: Critical issues across all domains (0)
+- **Status**: "None" or count with severity
+- **Alert level**: Color coding (green for 0, red for critical)
+- **Breakdown**: SSL: 0, Headers: 0, DNS: 0
 
-### Chart Area
-Full-width section below cards showing:
-- **Time period toggles**: 7d/30d/90d/1y buttons
-- **Score trend chart**: Line or area chart
-- **Interactive tooltips**: Hover details for data points
-- **Responsive design**: Adapts to sidebar collapsed/expanded states
+### Interactive Bar Chart (shadcn/ui)
+Full-width interactive bar chart below cards:
+- **Chart Type**: Bar chart with toggle between datasets
+- **Toggle Options**: "All Domains" vs individual domain selection
+- **Time Period**: Last 30 days of security scores
+- **Interactive Header**: 
+  - Left side: Chart title and description
+  - Right side: Toggle buttons showing totals
+- **Visual Features**:
+  - Vertical bars for each day's score
+  - Color coding: Green for good scores, yellow for medium, red for poor
+  - Hover tooltips with exact score and date
+  - Animated transitions when switching datasets
+- **Implementation**: Using shadcn/ui ChartContainer with Recharts
+- **Height**: 250px fixed height
+- **Responsive**: Adjusts margins and tick gaps for mobile
 
 ---
 
@@ -161,28 +218,53 @@ Full-width section below cards showing:
 │ Sidebar │  Domains                      [Add Domain] [Scan All] │
 │         │                                                        │
 │         │  ┌────────────────────────────────────────────────────┐ │
-│         │  │ Domain         Last Scan      Score    Status    │ │
+│         │  │ Domain         Last Scan       Score      Actions  │ │
 │         │  ├────────────────────────────────────────────────────┤ │
-│         │  │ 🔐 example.com  2 hours ago    85 B+    ● Active │ │
-│         │  │ 🔐 example.com  1 day ago      92 A     ● Active │ │
-│         │  │ 🔐 mysite.io    3 days ago     67 C     ● Active │ │
+│         │  │ example.com    2 hours ago    85 B+   View|Scan|Delete │ │
+│         │  │ myapp.com      1 day ago      92 A    View|Scan|Delete │ │
+│         │  │ mysite.io      3 days ago     67 C    View|Scan|Delete │ │
 │         │  │                                                    │ │
-│         │  │ Actions: 👁️ View Details  🔍 Scan Now  🗑️ Delete  │ │
 │         │  └────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ### Table Structure (Using Template Table Component)
-- **Domain column**: SSL icon + domain name
-- **Last Scan column**: Relative time (2 hours ago)
+- **Domain column**: Domain name (no icons)
+- **Last Scan column**: Relative time (2 hours ago) or "Never"
 - **Score column**: Number + grade with color coding
-- **Status column**: Active/inactive with status dot
-- **Actions column**: View/scan/delete icon buttons
+- **Actions column**: Text links or buttons (View | Scan | Delete)
 
 ### Action Buttons (Template Button Styles)
 - **Add Domain**: Primary button (top right)
 - **Scan All**: Secondary button (top right)
 - **Individual actions**: Icon buttons in table rows
+
+### Inline Scanning State (Shadcn Progress + Reverb)
+When a scan is triggered from the domain list, the row shows inline progress:
+
+```tsx
+// Domain row during scanning
+<TableRow>
+  <TableCell>example.com</TableCell>
+  <TableCell>
+    <div className="space-y-2">
+      <Progress value={scanProgress} className="h-2 w-32" />
+      <span className="text-xs text-muted-foreground">Scanning...</span>
+    </div>
+  </TableCell>
+  <TableCell>-</TableCell>
+  <TableCell>
+    <Button variant="ghost" size="sm" disabled>
+      Scanning...
+    </Button>
+  </TableCell>
+</TableRow>
+
+// Reverb subscription for inline progress
+useReverbChannel(`scan.${domain.id}`, {
+  onProgress: (data) => updateRowProgress(domain.id, data.percentage)
+})
+```
 
 ---
 
@@ -191,38 +273,138 @@ Full-width section below cards showing:
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │ Sidebar │  example.com                          [New Scan]      │
-│         │  Last scanned 2 hours ago                             │
 │         │                                                        │
 │         │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐     │
-│         │  │ Overall     │ │ SSL/TLS     │ │ Headers     │     │
-│         │  │   85/100    │ │   90/100    │ │   75/100    │     │
-│         │  │   Grade B+  │ │   Grade A   │ │   Grade C   │     │
+│         │  │ Security    │ │ SSL Grade   │ │ Last Scan   │     │
+│         │  │ Score       │ │             │ │             │     │
+│         │  │   85/100    │ │     A       │ │  2 hrs ago  │     │
+│         │  │   Grade B+  │ │  Strong SSL │ │   Success   │     │
 │         │  └─────────────┘ └─────────────┘ └─────────────┘     │
 │         │                                                        │
-│         │  Security Analysis Details                             │
+│         │  Scanner Results                                       │
+│         │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐     │
+│         │  │ SSL/TLS     │ │ Security    │ │ DNS/Email   │     │
+│         │  │ Scanner     │ │ Headers     │ │ Security    │     │
+│         │  │   45/50     │ │   15/20     │ │   25/30     │     │
+│         │  │   Grade A   │ │   Grade C   │ │   Grade B   │     │
+│         │  └─────────────┘ └─────────────┘ └─────────────┘     │
+│         │                                                        │
+│         │  Detailed Analysis                                     │
 │         │  ┌───────────────────────────────────────────────────┐ │
 │         │  │ ✅ SSL/TLS Certificate               
 │         │  │    • Valid for 90 more days                       │ │
 │         │  │    • TLS 1.3 supported                            │ │
+│         │  │    • Strong cipher suites                         │ │
 │         │  │_____________________________________________________
 │         │  │ ⚠️  Security Headers                 
-│         │  │    • Missing CSP header                           │ │
+│         │  │    • Missing CSP header (-5 points)               │ │
 │         │  │    • HSTS configured correctly                    │ │
+│         │  │    • X-Frame-Options: DENY                        │ │
 │         │  _______________________________________________________│    
 │         │  │ ✅ DNS & Email Security              
 │         │  │    • SPF record valid                             │ │
 │         │  │    • DMARC policy: quarantine                     │ │
+│         │  │    • DKIM configured                              │ │
 │         │  └───────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Module Results Display
-Each scanner module shows:
-- **Status icon**: ✅ (good), ⚠️ (warning), ❌ (error)
-- **Module name**: SSL/TLS Certificate, Security Headers, etc.
-- **Score**: Numerical score out of 100
-- **Details list**: Specific findings and recommendations
-- **Expandable sections**: Click to show/hide details
+### Card Structure Breakdown
+
+#### Top Row - Overview Cards
+1. **Security Score Card**: Overall composite score (0-100) with grade
+2. **SSL Grade Card**: Industry-standard SSL grade (A+ to F)
+3. **Last Scan Card**: Time since last scan with status
+
+#### Bottom Row - Scanner Results Cards
+1. **SSL/TLS Scanner Card**: Score out of 50 points with SSL grade
+2. **Security Headers Card**: Score out of 20 points with grade
+3. **DNS/Email Security Card**: Score out of 30 points with grade
+
+#### Detailed Analysis Section
+- **Expandable sections** for each scanner with specific findings
+- **Color-coded status indicators** (✅ pass, ⚠️ warning, ❌ fail)
+- **Point deductions** shown for specific issues
+- **Actionable recommendations** for improvements
+
+---
+
+## Activity Page Layout
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Sidebar │  Activity                                             │
+│         │  Scan history across all domains                      │
+│         │                                                        │
+│         │  ┌────────────────────────────────────────────────────┐ │
+│         │  │ Domain Filter: [All Domains ▼]                    │ │
+│         │  └────────────────────────────────────────────────────┘ │
+│         │                                                        │
+│         │  ┌────────────────────────────────────────────────────┐ │
+│         │  │ Date          Domain         Score      Actions      │ │
+│         │  ├────────────────────────────────────────────────────┤ │
+│         │  │ 2 hours ago   example.com    85 B+   Generate Report │ │
+│         │  │ 5 hours ago   mysite.io      92 A    Generate Report │ │
+│         │  │ 1 day ago     example.com    83 B+   Generate Report │ │
+│         │  │ 2 days ago    another.com    78 C    Generate Report │ │
+│         │  │ 3 days ago    example.com    80 B    Generate Report │ │
+│         │  │                                                    │ │
+│         │  │ Showing 1-20 of 145 scans                         │ │
+│         │  │ [Previous] [1] 2 3 4 ... 8 [Next]                 │ │
+│         │  └────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Activity Page Features
+- **Domain Filter Dropdown**: Filter by specific domain or "All Domains"
+- **Scan History Table**: 
+  - Date/time (relative format)
+  - Domain name with link to domain detail
+  - Score with grade badge
+  - Generate Report button for each scan
+- **Pagination**: 20 items per page
+- **Sorting**: Default by date (newest first)
+- **Mobile**: Cards instead of table on <768px
+
+---
+
+## Reports Page Layout
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ Sidebar │  Reports                                               │
+│         │  Security reports                           │
+│         │                                                        │
+│         │  ┌────────────────────────────────────────────────────┐ │
+│         │  │ Domain Filter: [All Domains ▼]                    │ │
+│         │  └────────────────────────────────────────────────────┘ │
+│         │                                                        │
+│         │  ┌────────────────────────────────────────────────────┐ │
+│         │  │ Date          Domain         Score     Actions      │ │
+│         │  ├────────────────────────────────────────────────────┤ │
+│         │  │ 1 hour ago    example.com    85 B+   Download PDF │ │
+│         │  │ 3 hours ago   mysite.io      92 A    Download PDF │ │
+│         │  │ 1 day ago     example.com    83 B+   Download PDF │ │
+│         │  │ 3 days ago    another.com    78 C    Download PDF │ │
+│         │  │ 1 week ago    example.com    80 B    Download PDF │ │
+│         │  │                                                    │ │
+│         │  │ Showing 1-20 of 52 reports                        │ │
+│         │  │ [Previous] [1] 2 3 [Next]                         │ │
+│         │  └────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Reports Page Features
+- **Domain Filter Dropdown**: Filter by specific domain or "All Domains"
+- **Reports Table**:
+  - Generation date/time (relative format)
+  - Domain name
+  - Score at time of report
+  - Download button (generates 1-hour S3 signed URL)
+- **Pagination**: 20 items per page
+- **Sorting**: Default by date (newest first)
+- **File Size**: Shown in hover tooltip
+- **Mobile**: Cards instead of table on <768px
 
 ---
 
@@ -273,24 +455,92 @@ Each scanner module shows:
 
 ## Loading States and Empty States
 
-### Scanning Progress
+### Scanning Progress (Shadcn Progress + Laravel Reverb)
+
+#### UI Implementation
+```tsx
+import { Progress } from "@/components/ui/progress"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useReverbChannel } from "@/hooks/use-reverb"
+
+// Real-time progress updates via Laravel Reverb WebSocket
+const [progress, setProgress] = useState(0)
+const [currentModule, setCurrentModule] = useState("")
+
+// Subscribe to Reverb channel for scan progress
+useReverbChannel(`scan.${scanId}`, {
+  onProgress: (data) => {
+    setProgress(data.percentage)
+    setCurrentModule(data.module)
+  },
+  onComplete: (data) => {
+    setProgress(100)
+    // Handle completion
+  }
+})
+
+// UI Component
+<Card className="w-full max-w-md mx-auto">
+  <CardHeader>
+    <CardTitle>Scanning {domain}</CardTitle>
+    <CardDescription>This usually takes 15-30 seconds</CardDescription>
+  </CardHeader>
+  <CardContent className="space-y-4">
+    <Progress value={progress} className="w-full" />
+    <div className="flex justify-between text-sm text-muted-foreground">
+      <span>Currently checking: {currentModule}</span>
+      <span>{progress}%</span>
+    </div>
+  </CardContent>
+</Card>
 ```
-┌─────────────────────────────────────────────────┐
-│ Scanning example.com...                         │
-│                                                  │
-│ [████████████████░░░░░░░░░░░░] 65%              │
-│                                                  │
-│ Currently checking: Security Headers             │
-│                                                  │
-│ This usually takes 15-30 seconds                │
-└─────────────────────────────────────────────────┘
+
+#### Visual States
+- **0-33%**: SSL/TLS Certificate scan (progress bar in default color)
+- **34-66%**: Security Headers scan (smooth transition)
+- **67-100%**: DNS/Email Security scan (completion animation)
+
+#### Progress Component Variants
+```tsx
+// Different styles based on scan status
+<Progress 
+  value={progress} 
+  className={cn(
+    "w-full transition-all",
+    progress === 100 && "bg-green-500/20"
+  )}
+/>
+
+// Indeterminate state for initial connection
+<Progress className="w-full" /> // Shows pulsing animation when no value
+
+// Error state
+<Progress value={progress} className="w-full bg-red-500/20" />
 ```
+
+#### Reverb WebSocket Integration
+```php
+// Backend broadcasts progress via Reverb
+broadcast(new ScanProgressEvent($scan))
+  ->toChannel("scan.{$scan->id}")
+  ->withData([
+    'percentage' => 65,
+    'module' => 'Security Headers',
+    'status' => 'in_progress',
+    'estimated_time_remaining' => 10 // seconds
+  ]);
+```
+
+#### Real-time Updates Flow
+1. **Scan Initiated**: Progress component appears with indeterminate state
+2. **Connection Established**: Reverb WebSocket connects to scan channel
+3. **Module Progress**: Updates every 2-3 seconds with current module
+4. **Completion**: Progress reaches 100%, success animation plays
+5. **Results Ready**: Progress component replaced with results summary
 
 ### No Domains State
 ```
 ┌─────────────────────────────────────────────────┐
-│             🔐                                   │
-│                                                  │
 │       No domains added yet                      │
 │                                                  │
 │  Add your first domain to start monitoring      │
@@ -355,8 +605,7 @@ Each scanner module shows:
 ```
 ┌─────────────────────────┐
 │ example.com     B+  85  │
-│ Last: 2 hours ago       │
-│ Status: ● Active        │
+│ Last scan: 2 hours ago  │
 │ [View] [Scan] [Delete]  │
 └─────────────────────────┘
 ```
@@ -383,80 +632,16 @@ return (
 )
 ```
 
-### Mobile Domain Card Component
-```tsx
-import { Shield, MoreHorizontal } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-
-interface DomainMobileCardProps {
-  domain: Domain
-  onViewDetails: (domainId: string) => void
-  onScanNow: (domainId: string) => void
-  onDelete: (domainId: string) => void
-}
-
-export function DomainMobileCard({ domain, onViewDetails, onScanNow, onDelete }: DomainMobileCardProps) {
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center space-x-2">
-            <Shield className="h-4 w-4 text-green-500" />
-            <span className="font-medium">{domain.url}</span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <span className="text-2xl font-bold">{domain.lastScanScore ?? '-'}</span>
-            {domain.grade && (
-              <Badge variant="secondary">{domain.grade}</Badge>
-            )}
-          </div>
-        </div>
-        
-        <div className="space-y-2 mb-4">
-          <div className="text-sm text-muted-foreground">
-            Last scan: {domain.lastScanAt ? formatRelative(domain.lastScanAt, new Date()) : 'Never'}
-          </div>
-          <div className="flex items-center space-x-2">
-            <div className={`h-2 w-2 rounded-full ${
-              domain.isActive ? 'bg-green-500' : 'bg-gray-500'
-            }`}></div>
-            <span className="text-sm">{domain.isActive ? 'Active' : 'Inactive'}</span>
-          </div>
-        </div>
-        
-        <div className="flex space-x-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex-1"
-            onClick={() => onViewDetails(domain.id)}
-          >
-            View
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex-1"
-            onClick={() => onScanNow(domain.id)}
-          >
-            Scan
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="text-red-600"
-            onClick={() => onDelete(domain.id)}
-          >
-            Delete
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-```
+### Mobile Components
+- **Domain Cards**: shadcn/ui Card component
+  - Shows domain name (no icons)
+  - Score and grade prominently displayed
+  - Last scan time
+  - Action buttons (View | Scan | Delete)
+- **Responsive Breakpoints**:
+  - Desktop (>1024px): Full tables
+  - Tablet (768-1024px): Condensed tables
+  - Mobile (<768px): Card layouts
 
 ---
 
@@ -482,283 +667,78 @@ export function DomainMobileCard({ domain, onViewDetails, onScanNow, onDelete }:
 
 ## Component Implementation
 
-### Dashboard Cards (Using Template Card Component)
-```tsx
-import { Shield } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
+### Dashboard Cards
+- **Component**: shadcn/ui Card component
+- **Layout**: 3-card grid (responsive)
+- **Content Structure**:
+  - Title (small, muted text)
+  - Main metric (large, bold)
+  - Supporting text (grade/status)
+- **Cards**:
+  1. Security Score: Number + Grade (color-coded)
+  2. Your Domains: Usage count with progress bar
+  3. Critical Issues: Count with severity indicator
 
-interface SecurityScoreCardProps {
-  score: number
-  grade: string
-  className?: string
-}
+### Domain Table
+- **Component**: shadcn/ui Data Table (TanStack Table)
+- **Reference**: https://ui.shadcn.com/docs/components/data-table
+- **Columns**:
+  - Domain (sortable)
+  - Last Scan (relative time or "Never", sortable)
+  - Security Score (number + grade badge, sortable)
+  - Actions (text buttons: View | Scan | Delete)
+- **Features**:
+  - Column sorting (domain name, date, score)
+  - Pagination (10/20/50 rows per page)
+  - Filtering by domain name (search input)
+  - Row selection for bulk actions (future: bulk scan)
+  - Column visibility toggle
+- **Mobile**: Converts to card layout below 768px
+- **Empty State**: "No domains added yet" with Add Domain button
 
-export function SecurityScoreCard({ score, grade, className }: SecurityScoreCardProps) {
-  return (
-    <Card className={className}>
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-muted-foreground">
-              Security Score
-            </p>
-            <div className="flex items-baseline space-x-2">
-              <div className="text-2xl font-bold">{score}</div>
-              <div className="text-sm font-medium text-yellow-500">{grade}</div>
-            </div>
-          </div>
-          <Shield className="h-4 w-4 text-muted-foreground" />
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-```
+### Activity Page
+- **Component**: shadcn/ui Data Table (TanStack Table)
+- **Reference**: https://ui.shadcn.com/docs/components/data-table
+- **Columns**:
+  - Date (sortable, default sort desc)
+  - Domain (sortable, filterable)
+  - Score + Grade (sortable)
+  - Actions (Generate Report button)
+- **Features**:
+  - Global filter (search across all columns)
+  - Domain-specific filter (dropdown)
+  - Pagination (20 items default)
+  - Export to CSV (future enhancement)
+- **Mobile**: Cards instead of table
 
-### Domain Table (Using Template Table Component)
-```tsx
-import { Shield, MoreHorizontal } from 'lucide-react'
-import { formatRelative } from 'date-fns'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+### Reports Page
+- **Component**: shadcn/ui Data Table (TanStack Table)
+- **Reference**: https://ui.shadcn.com/docs/components/data-table
+- **Columns**:
+  - Generated Date (sortable, default sort desc)
+  - Domain (sortable, filterable)
+  - Score + Grade (sortable)
+  - File Size (sortable)
+  - Actions (Download button)
+- **Features**:
+  - Domain filter (dropdown or faceted filter)
+  - Date range filter (future)
+  - Pagination (20 items default)
+  - Download generates 1-hour S3 signed URL
+  - Bulk download (with row selection)
+- **Mobile**: Cards instead of table
 
-interface Domain {
-  id: string
-  url: string
-  lastScanAt: Date | null
-  lastScanScore: number | null
-  grade: string | null
-  isActive: boolean
-}
-
-interface DomainTableProps {
-  domains: Domain[]
-  onViewDetails: (domainId: string) => void
-  onScanNow: (domainId: string) => void
-  onDelete: (domainId: string) => void
-}
-
-export function DomainTable({ domains, onViewDetails, onScanNow, onDelete }: DomainTableProps) {
-  const handleAction = (action: string, domainId: string) => (e: React.MouseEvent) => {
-    e.preventDefault()
-    switch (action) {
-      case 'view':
-        onViewDetails(domainId)
-        break
-      case 'scan':
-        onScanNow(domainId)
-        break
-      case 'delete':
-        onDelete(domainId)
-        break
-    }
-  }
-
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Domain</TableHead>
-          <TableHead>Last Scan</TableHead>
-          <TableHead>Score</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Actions</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {domains.map((domain) => (
-          <TableRow key={domain.id}>
-            <TableCell className="font-medium">
-              <div className="flex items-center space-x-2">
-                <Shield className="h-4 w-4 text-green-500" />
-                <span>{domain.url}</span>
-              </div>
-            </TableCell>
-            <TableCell>
-              {domain.lastScanAt 
-                ? formatRelative(domain.lastScanAt, new Date())
-                : 'Never'
-              }
-            </TableCell>
-            <TableCell>
-              <div className="flex items-center space-x-2">
-                <span>{domain.lastScanScore ?? '-'}</span>
-                {domain.grade && (
-                  <Badge variant="secondary">{domain.grade}</Badge>
-                )}
-              </div>
-            </TableCell>
-            <TableCell>
-              <div className="flex items-center space-x-2">
-                <div className={`h-2 w-2 rounded-full ${
-                  domain.isActive ? 'bg-green-500' : 'bg-gray-500'
-                }`}></div>
-                <span>{domain.isActive ? 'Active' : 'Inactive'}</span>
-              </div>
-            </TableCell>
-            <TableCell>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="h-8 w-8 p-0">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={handleAction('view', domain.id)}>
-                    View Details
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleAction('scan', domain.id)}>
-                    Scan Now
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={handleAction('delete', domain.id)}
-                    className="text-red-600"
-                  >
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  )
-}
-```
-
-### Chart Component (Using Template Chart Patterns)
-```tsx
-import { useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts'
-
-interface ScoreDataPoint {
-  date: string
-  score: number
-  timestamp: Date
-}
-
-interface SecurityScoreChartProps {
-  data: ScoreDataPoint[]
-  className?: string
-}
-
-type TimePeriod = '7d' | '30d' | '90d' | '1y'
-
-export function SecurityScoreChart({ data, className }: SecurityScoreChartProps) {
-  const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('90d')
-
-  const handlePeriodChange = (period: TimePeriod) => (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault()
-    setSelectedPeriod(period)
-  }
-
-  const filteredData = data.filter((point) => {
-    const now = new Date()
-    const cutoff = new Date()
-    
-    switch (selectedPeriod) {
-      case '7d':
-        cutoff.setDate(now.getDate() - 7)
-        break
-      case '30d':
-        cutoff.setDate(now.getDate() - 30)
-        break
-      case '90d':
-        cutoff.setDate(now.getDate() - 90)
-        break
-      case '1y':
-        cutoff.setFullYear(now.getFullYear() - 1)
-        break
-    }
-    
-    return point.timestamp >= cutoff
-  })
-
-  return (
-    <Card className={className}>
-      <CardHeader>
-        <CardTitle>Security Score Trend</CardTitle>
-        <div className="flex space-x-2">
-          <Button 
-            variant={selectedPeriod === '7d' ? 'default' : 'outline'} 
-            size="sm"
-            onClick={handlePeriodChange('7d')}
-          >
-            7d
-          </Button>
-          <Button 
-            variant={selectedPeriod === '30d' ? 'default' : 'outline'} 
-            size="sm"
-            onClick={handlePeriodChange('30d')}
-          >
-            30d
-          </Button>
-          <Button 
-            variant={selectedPeriod === '90d' ? 'default' : 'outline'} 
-            size="sm"
-            onClick={handlePeriodChange('90d')}
-          >
-            90d
-          </Button>
-          <Button 
-            variant={selectedPeriod === '1y' ? 'default' : 'outline'} 
-            size="sm"
-            onClick={handlePeriodChange('1y')}
-          >
-            1y
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={filteredData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="date" />
-            <YAxis domain={[0, 100]} />
-            <Tooltip 
-              formatter={(value: number) => [`${value}%`, 'Security Score']}
-              labelFormatter={(label: string) => `Date: ${label}`}
-            />
-            <Line 
-              type="monotone" 
-              dataKey="score" 
-              stroke="#22c55e" 
-              strokeWidth={2}
-              dot={{ fill: '#22c55e', strokeWidth: 2, r: 4 }}
-              activeDot={{ r: 6 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </CardContent>
-    </Card>
-  )
-}
-```
+### Dashboard Chart
+- **Component**: shadcn/ui interactive bar chart (with toggle buttons)
+- **Data**: Last 30 days of security scores (0-100 range)
+- **Toggle Options**: "All Domains" average vs individual domain scores
+- **Colors**: Green theme (hsl(142 70% 45%) primary)
+- **Height**: 250px fixed
+- **Features**:
+  - Toggle buttons show average score (not total)
+  - Hover tooltips with exact score and date
+  - Responsive layout with proper mobile sizing
+  - Month/day labels on X-axis
 
 ---
 
@@ -771,34 +751,10 @@ export function SecurityScoreChart({ data, className }: SecurityScoreChartProps)
 - **Keyboard navigation**: Full support without mouse
 
 ### Screen Reader Support
-```tsx
-import { Card, CardContent } from '@/components/ui/card'
-
-interface AccessibleScoreDisplayProps {
-  score: number
-  grade: string
-  label?: string
-}
-
-export function AccessibleScoreDisplay({ 
-  score, 
-  grade, 
-  label = "Security score" 
-}: AccessibleScoreDisplayProps) {
-  const ariaLabel = `${label} ${score} out of 100, grade ${grade.replace('+', ' plus')}`
-  
-  return (
-    <Card>
-      <CardContent>
-        <div aria-label={ariaLabel} role="img">
-          <div className="text-2xl font-bold">{score}</div>
-          <div className="text-sm">{grade}</div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-```
+- Proper ARIA labels for all interactive elements
+- Role attributes for semantic meaning
+- Score announcements include context (e.g., "85 out of 100, grade B plus")
+- Form validation messages announced immediately
 
 ### Keyboard Shortcuts
 - **Tab navigation**: Logical tab order through interface
@@ -825,10 +781,30 @@ export function AccessibleScoreDisplay({
 - Change the collapsible sidebar behavior or toggle position
 
 ### Implementation Priority
-1. **Phase 8**: Dashboard with security metric cards
-2. **Phase 9**: Domain list page with table
-3. **Phase 9**: Domain detail page with scan results
-4. **Phase 10**: Settings and profile integration
-5. **Phase 11**: Report generation UI
+1. **Phase 8**: Dashboard with security metric cards (using green theme)
+2. **Phase 9**: Domain list page with table (green accents)
+3. **Phase 9**: Domain detail page with scan results (green status indicators)
+4. **Phase 10**: Settings and profile integration (green theme buttons)
+5. **Phase 11**: Report generation UI (green success states)
 
-The goal is seamless integration where users cannot distinguish between template components and security-specific additions.
+### CSS Implementation
+```css
+/* Add to global CSS file */
+@layer base {
+  :root {
+    /* Green theme variables as defined above */
+  }
+  
+  .dark {
+    /* Dark mode green theme variables as defined above */
+  }
+}
+
+/* Security score colors using CSS variables */
+.score-excellent { color: hsl(var(--primary)); }
+.score-good { color: hsl(142 50% 55%); }
+.score-warning { color: hsl(47 80% 50%); }
+.score-danger { color: hsl(var(--destructive)); }
+```
+
+The goal is seamless integration with the green theme where all UI elements naturally fit the security monitoring context.
