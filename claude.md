@@ -76,6 +76,20 @@ php artisan make:model Domain -mfsc --all
 php artisan test --filter="Phase1Test"
 php artisan test --parallel
 php artisan test --coverage --min=80
+
+# Code quality with Laravel Pint
+./vendor/bin/pint --test  # Check code style (PSR-12)
+./vendor/bin/pint         # Fix code style automatically
+./vendor/bin/pint --dirty # Fix only modified files
+
+# AI-assisted development with Laravel Boost
+composer require laravel/boost --dev
+php artisan boost:install  # One-time setup
+# Boost provides context for better AI code generation
+
+# Live form validation with Precognition
+npm install laravel-precognition-react
+# Enables real-time validation without duplicating backend rules
 ```
 
 ## Critical Security Requirements
@@ -411,29 +425,6 @@ laravel-cloud database:restore achilleus-db --backup=backup-id
 - `app/Jobs/GenerateReport.php` - Async report job
 - Payment integration via Laravel Cashier
 - Email notifications for expiry warnings
-
-## 13-Phase Development Roadmap
-
-### Foundation (Days 1-5)
-1. **Project Setup, Database & Trial System** - Laravel + React starter kit with auth, PostgreSQL schema, models, and trial system
-2. **Security Infrastructure** - NetworkGuard + AbstractScanner
-
-### Core Scanners (Days 6-11)
-3. **SSL/TLS Scanner** - Certificate analysis (50% weight)
-4. **Security Headers Scanner** - HTTP headers analysis (20% weight)
-5. **DNS/Email Scanner** - SPF/DKIM/DMARC/DNSSEC (30% weight)
-
-### Application Logic (Days 12-20)
-6. **Scan Orchestration** - Job queue + WebSocket updates
-7. **Core UI** - Dashboard + domain list extending starter template
-8. **Domain Detail** - Scan results + configuration
-9. **Settings + Profile** - User management + activity
-
-### Advanced Features (Days 21-30)
-10. **Report Generation** - PDF creation + S3 storage + Email Notifications
-11. **Payment Integration** - Stripe + $27/month subscriptions + subscription settings tab
-12. **Landing Page** - Marketing site + SEO
-13. **Production Polish** - Laravel Cloud deployment + monitoring
 
 ## Common Pitfalls to Avoid
 

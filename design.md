@@ -410,7 +410,7 @@ useReverbChannel(`scan.${domain.id}`, {
 
 ## Modal Dialogs (Using Template Dialog Component)
 
-### Add Domain Modal
+### Add Domain Modal (with Laravel Precognition)
 ```
 ┌─────────────────────────────────────────────────┐
 │ Add New Domain                              [✕] │
@@ -420,6 +420,7 @@ useReverbChannel(`scan.${domain.id}`, {
 │ ┌──────────────────────────────────────────┐    │
 │ │ example.com                   → https:// │    │
 │ └──────────────────────────────────────────┘    │
+│ ✓ Valid domain format (live validation)         │
 │ Just enter the domain name (e.g., example.com)  │
 │                                                  │
 │ Email Configuration                              │
@@ -435,6 +436,13 @@ useReverbChannel(`scan.${domain.id}`, {
 │         [Cancel]  [Add & Scan Domain]            │
 └─────────────────────────────────────────────────┘
 ```
+
+**Laravel Precognition Integration**:
+- Real-time validation without API calls using `laravel-precognition-react`
+- Instant feedback on domain format validation
+- Duplicate domain checking with live feedback
+- No need to duplicate backend validation rules in frontend
+- Shows validation errors as user types (after debounce)
 
 ### Delete Confirmation Modal
 ```
@@ -772,6 +780,8 @@ return (
 - Follow template's responsive breakpoint behavior
 - Keep sidebar navigation and profile section unchanged
 - Use template's existing icon system and button styles
+- Implement Laravel Precognition for all forms with real-time validation
+- Use Shadcn/ui form components with built-in validation states
 
 ### ❌ Never Do
 - Modify the sidebar layout, width, or profile section
@@ -779,6 +789,45 @@ return (
 - Override template's CSS classes or styling system
 - Add custom navigation components outside template structure
 - Change the collapsible sidebar behavior or toggle position
+- Duplicate validation rules in frontend (use Precognition instead)
+
+### Form Validation with Laravel Precognition
+```typescript
+// Example: Add Domain Form with Live Validation
+import { useForm } from 'laravel-precognition-react';
+
+function AddDomainModal() {
+  const form = useForm('post', '/domains', {
+    domain: '',
+    sends_email: true,
+    dkim_selector: '',
+  });
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    form.submit({
+      preserveScroll: true,
+      onSuccess: () => {
+        // Handle success
+      },
+    });
+  };
+
+  return (
+    <form onSubmit={submit}>
+      <Input
+        value={form.data.domain}
+        onChange={(e) => form.setData('domain', e.target.value)}
+        onBlur={() => form.validate('domain')}
+        invalid={form.invalid('domain')}
+      />
+      {form.invalid('domain') && (
+        <span className="text-sm text-red-500">{form.errors.domain}</span>
+      )}
+    </form>
+  );
+}
+```
 
 ### Implementation Priority
 1. **Phase 8**: Dashboard with security metric cards (using green theme)

@@ -89,7 +89,7 @@ Implement user profile management and notification preferences. Create settings 
 ## Phase 10: Reports & Notifications
 **Days 22-23 | 20 tests**
 
-Generate PDF reports with DomPDF and S3 storage. Configure Resend mail driver for email delivery. Create scheduled commands: CheckCertificateExpiry and CheckTrialExpiry. Configure Laravel scheduler in cron (* * * * * php artisan schedule:run). Setup email notifications for certificate and trial expiry warnings with unsubscribe links.
+Generate PDF reports using Barryvdh/Laravel-DomPDF package and S3 storage. Configure Resend mail driver for email delivery. Create scheduled commands: CheckCertificateExpiry and CheckTrialExpiry. Configure Laravel scheduler in cron (* * * * * php artisan schedule:run). Setup email notifications for certificate and trial expiry warnings with unsubscribe links.
 
 **Tests**: PDF generation (8), email delivery (4), S3 storage (4), scheduling (4)
 

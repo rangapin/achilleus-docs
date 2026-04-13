@@ -443,8 +443,10 @@ php artisan test
 # 2. Check coverage
 php artisan test --coverage
 
-# 3. Run linting
-./vendor/bin/pint
+# 3. Run code style checks with Laravel Pint
+./vendor/bin/pint --test  # Check code style without modifications
+./vendor/bin/pint         # Fix code style automatically
+./vendor/bin/pint --dirty # Fix only modified files (git-tracked)
 
 # 4. Clear test cache if needed
 php artisan test --recreate-databases
@@ -600,6 +602,9 @@ jobs:
           composer install
           npm ci && npm run build
           
+      - name: Code Style Check
+        run: ./vendor/bin/pint --test
+        
       - name: Run Tests
         env:
           DB_CONNECTION: sqlite

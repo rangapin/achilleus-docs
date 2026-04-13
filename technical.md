@@ -12,14 +12,25 @@
 - **Storage**: S3-compatible object storage for PDF reports
 - **CDN**: Laravel Cloud Edge Network with global CDN
 - **Hosting**: Laravel Cloud only (https://cloud.laravel.com/)
-- **Real-time**: Laravel Reverb for WebSocket connections (https://reverb.laravel.com/)
+- **Real-time**: Laravel Reverb for WebSocket connections (https://laravel.com/docs/12.x/reverb)
 - **Authentication**: Laravel's built-in authentication (email/password)
 - **Email**: Laravel Mail with Resend driver for notifications
 
 ### Laravel Ecosystem Packages
-- **Laravel Cashier**: Stripe subscription billing for $27/month plans
-- **Laravel Precognition**: Live form validation without duplicating rules
-- **Laravel Breeze/Jetstream**: Authentication scaffolding with React
+
+#### Core Packages
+- **Laravel Cashier**: Stripe subscription billing for $27/month plans (https://laravel.com/docs/12.x/billing)
+- **Laravel Reverb**: Real-time WebSocket communication for scan progress updates (https://laravel.com/docs/12.x/reverb)
+- **Laravel Precognition**: Live form validation without duplicating backend rules (https://laravel.com/docs/12.x/precognition)
+- **Laravel Breeze**: Authentication scaffolding with React and Inertia.js
+
+#### Development Tools
+- **Laravel Pint**: PSR-12 code style enforcement and automatic fixing (https://laravel.com/docs/12.x/pint)
+- **Laravel Boost**: AI-assisted development context for better code generation (https://boost.laravel.com/)
+
+#### Third-Party Packages
+- **Barryvdh/Laravel-DomPDF**: PDF generation for security reports (https://github.com/barryvdh/laravel-dompdf)
+- **Shadcn/ui**: Modern React components with dark theme support (https://ui.shadcn.com/)
 
 ### Application Architecture
 ```
